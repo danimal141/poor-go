@@ -1,14 +1,12 @@
-// src/lexer/token.ts
-
 export enum TokenType {
   // Special tokens
-  ILLEGAL = "ILLEGAL",  // Unknown characters
-  EOF = "EOF",         // End of file
+  ILLEGAL = "ILLEGAL", // Unknown characters
+  EOF = "EOF", // End of file
 
   // Identifiers + literals
-  IDENT = "IDENT",     // add, foobar, x, y, ...
-  INT = "INT",         // 123456
-  STRING = "STRING",   // "hello world"
+  IDENT = "IDENT", // add, foobar, x, y, ...
+  INT = "INT", // 123456
+  STRING = "STRING", // "hello world"
 
   // Operators
   ASSIGN = "=",
@@ -55,10 +53,10 @@ export enum TokenType {
 }
 
 export interface Token {
-  type: TokenType;     // Type of the token
-  literal: string;     // Actual string value
-  line: number;        // Line number in source
-  column: number;      // Column number in source
+  type: TokenType; // Type of the token
+  literal: string; // Actual string value
+  line: number; // Line number in source
+  column: number; // Column number in source
 }
 
 // Keyword map

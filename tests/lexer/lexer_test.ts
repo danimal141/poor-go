@@ -1,0 +1,169 @@
+import { describe, it } from "std/testing/bdd.ts";
+import { assertEquals } from "std/assert/mod.ts";
+import { Lexer } from "../../src/lexer/lexer.ts";
+import { TokenType } from "@/lexer/token.ts";
+
+describe("Lexer", () => {
+  describe("nextToken", () => {
+    it("should tokenize operators and delimiters", () => {
+      const input = "=+(){},;";
+      const tests = [
+        { type: TokenType.ASSIGN, literal: "=" },
+        { type: TokenType.PLUS, literal: "+" },
+        { type: TokenType.LPAREN, literal: "(" },
+        { type: TokenType.RPAREN, literal: ")" },
+        { type: TokenType.LBRACE, literal: "{" },
+        { type: TokenType.RBRACE, literal: "}" },
+        { type: TokenType.COMMA, literal: "," },
+        { type: TokenType.SEMICOLON, literal: ";" },
+        { type: TokenType.EOF, literal: "" },
+      ];
+
+      const lexer = new Lexer(input);
+
+      for (const tt of tests) {
+        const token = lexer.nextToken();
+        assertEquals(
+          token.type,
+          tt.type,
+          `token type wrong. expected=${tt.type}, got=${token.type}`,
+        );
+        assertEquals(
+          token.literal,
+          tt.literal,
+          `token literal wrong. expected=${tt.literal}, got=${token.literal}`,
+        );
+      }
+    });
+
+    it("should tokenize a simple program", () => {
+      const input = `
+package main
+
+func add(x int, y int) int {
+    return x + y;
+}
+`;
+
+      const tests = [
+        { type: TokenType.PACKAGE, literal: "package" },
+        { type: TokenType.IDENT, literal: "main" },
+        { type: TokenType.FUNC, literal: "func" },
+        { type: TokenType.IDENT, literal: "add" },
+        { type: TokenType.LPAREN, literal: "(" },
+        { type: TokenType.IDENT, literal: "x" },
+        { type: TokenType.INT_TYPE, literal: "int" },
+        { type: TokenType.COMMA, literal: "," },
+        { type: TokenType.IDENT, literal: "y" },
+        { type: TokenType.INT_TYPE, literal: "int" },
+        { type: TokenType.RPAREN, literal: ")" },
+        { type: TokenType.INT_TYPE, literal: "int" },
+        { type: TokenType.LBRACE, literal: "{" },
+        { type: TokenType.RETURN, literal: "return" },
+        { type: TokenType.IDENT, literal: "x" },
+        { type: TokenType.PLUS, literal: "+" },
+        { type: TokenType.IDENT, literal: "y" },
+        { type: TokenType.SEMICOLON, literal: ";" },
+        { type: TokenType.RBRACE, literal: "}" },
+        { type: TokenType.EOF, literal: "" },
+      ];
+
+      const lexer = new Lexer(input);
+
+      for (const tt of tests) {
+        const token = lexer.nextToken();
+        assertEquals(
+          token.type,
+          tt.type,
+          `token type wrong. expected=${tt.type}, got=${token.type}`,
+        );
+        assertEquals(
+          token.literal,
+          tt.literal,
+          `token literal wrong. expected=${tt.literal}, got=${token.literal}`,
+        );
+      }
+    });
+
+    it("should tokenize operators", () => {
+      const input = `
++ - * /
+== != < > <= >=
+`;
+      const tests = [
+        { type: TokenType.PLUS, literal: "+" },
+        { type: TokenType.MINUS, literal: "-" },
+        { type: TokenType.ASTERISK, literal: "*" },
+        { type: TokenType.SLASH, literal: "/" },
+        { type: TokenType.EQ, literal: "==" },
+        { type: TokenType.NOT_EQ, literal: "!=" },
+        { type: TokenType.LT, literal: "<" },
+        { type: TokenType.GT, literal: ">" },
+        { type: TokenType.LTE, literal: "<=" },
+        { type: TokenType.GTE, literal: ">=" },
+        { type: TokenType.EOF, literal: "" },
+      ];
+
+      const lexer = new Lexer(input);
+
+      for (const tt of tests) {
+        const token = lexer.nextToken();
+        assertEquals(
+          token.type,
+          tt.type,
+          `token type wrong. expected=${tt.type}, got=${token.type}`,
+        );
+        assertEquals(
+          token.literal,
+          tt.literal,
+          `token literal wrong. expected=${tt.literal}, got=${token.literal}`,
+        );
+      }
+    });
+
+    it("should track line and column numbers", () => {
+      const input = `
+func add(x int) int {
+    return x + 1;
+}`;
+
+      const expectedPositions = [
+        { line: 2, column: 1 }, // func
+        { line: 2, column: 5 }, // add
+        { line: 2, column: 8 }, // (
+        { line: 2, column: 9 }, // x
+        { line: 2, column: 11 }, // int
+        { line: 2, column: 15 }, // )
+        { line: 2, column: 17 }, // int
+        { line: 2, column: 21 }, // {
+        { line: 3, column: 5 }, // return
+        { line: 3, column: 12 }, // x
+        { line: 3, column: 14 }, // +
+        { line: 3, column: 16 }, // 1
+        { line: 3, column: 17 }, // ;
+        { line: 4, column: 1 }, // }
+      ];
+
+      const lexer = new Lexer(input);
+
+      for (const expected of expectedPositions) {
+        const token = lexer.nextToken();
+
+        assertEquals(
+          token.line,
+          expected.line,
+          `wrong line number. expected=${expected.line}, got=${token.line}, token=${
+            JSON.stringify(token)
+          }`,
+        );
+        assertEquals(
+          token.column,
+          expected.column,
+          `wrong column number. expected=${expected.column}, got=${token.column}, token=${
+            JSON.stringify(token)
+          }`,
+        );
+      }
+    });
+  });
+});
