@@ -1,0 +1,17 @@
+# Deno specific
+.env
+.env.*
+*.orig
+*.pyc
+*.swp
+.DS_Store
+.idea/
+.vscode/
+.deno/
+deno.lock
+
+# Project specific
+dist/
+*.log
+node_modules/
+tmp/
