@@ -1,2 +1,2 @@
-# simple-compiler
-My simple compiler implementation
+# simple-go
+My simple compiler Go implementation
