@@ -5,8 +5,8 @@
     "test": "deno test --allow-read",
     "test:watch": "deno test --watch --allow-read",
     "compile": "deno compile --allow-read --allow-write main.ts",
-    "lint": "deno lint",
-    "fmt": "deno fmt",
+    "lint": "deno lint **/*.ts",
+    "fmt": "deno fmt **/*.ts",
     "check": "deno check **/*.ts"
   },
   "imports": {
@@ -40,7 +40,6 @@
   "fmt": {
     "indentWidth": 2,
     "semiColons": true,
-    "singleQuote": true,
     "proseWrap": "preserve",
     "include": ["src/", "test/"],
     "exclude": ["dist", "node_modules"]
