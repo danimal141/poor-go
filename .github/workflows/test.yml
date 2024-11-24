@@ -31,7 +31,7 @@ jobs:
         run: deno lint
 
       - name: Type check
-        run: deno check **/*.ts
+        run: deno check
 
       - name: Run tests
         run: deno test --allow-read
