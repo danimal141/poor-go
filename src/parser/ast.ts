@@ -51,16 +51,6 @@ export interface FunctionDeclaration extends Declaration {
 }
 
 /**
- * Represents a function parameter
- * Example: for 'x int', name is "x" and type is {typeType: "int"}
- */
-export interface Parameter {
-  name: string; // Parameter name
-  type: TypeNode; // Parameter type
-  location: Location;
-}
-
-/**
  * Represents a variable declaration
  * Example 1: var x int = 5
  * Example 2: y := 10 (type inference)
@@ -70,6 +60,16 @@ export interface VariableDeclaration extends Node {
   name: string; // Variable name
   declType: TypeNode | null; // Variable type (null for type inference)
   init: Expression; // Initial value
+}
+
+/**
+ * Represents a function parameter
+ * Example: for 'x int', name is "x" and type is {typeType: "int"}
+ */
+export interface Parameter {
+  name: string; // Parameter name
+  type: TypeNode; // Parameter type
+  location: Location;
 }
 
 /**
