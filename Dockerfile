@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Copy configuration files
 COPY deno.json .
-COPY main.ts .
+COPY . .
 
 EXPOSE 8000
 
