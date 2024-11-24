@@ -25,6 +25,13 @@ describe("AST Nodes", () => {
   const dummyLoc = { line: 1, column: 1 };
 
   describe("Program", () => {
+    /**
+     * Tests the basic structure of a program node
+     * Verifies that:
+     * - Program type is correctly set
+     * - Package name can be stored
+     * - Can initialize with empty declarations
+     */
     it("creates program node", () => {
       const program: Program = {
         type: "Program",
@@ -40,6 +47,13 @@ describe("AST Nodes", () => {
   });
 
   describe("Declarations", () => {
+    /**
+     * Tests function declaration structure with:
+     * - Return type
+     * - Parameters
+     * - Empty body
+     * Ensures all type information is preserved
+     */
     it("creates function declaration node", () => {
       const returnType: TypeNode = {
         type: "TypeNode",
@@ -82,6 +96,13 @@ describe("AST Nodes", () => {
       assertEquals(funcDecl.returnType.typeType, "int");
     });
 
+    /**
+     * Tests variable declaration with explicit type
+     * Verifies:
+     * - Type annotations
+     * - Initial value assignment
+     * - Type information consistency
+     */
     it("creates variable declaration node", () => {
       const varDecl: VariableDeclaration = {
         type: "VariableDeclaration",
@@ -103,7 +124,6 @@ describe("AST Nodes", () => {
       assertEquals(varDecl.name, "x");
       assertExists(varDecl.declType, "Type should exist");
       assertEquals(varDecl.declType.typeType, "int");
-
       assertEquals(varDecl.init.type, "IntegerLiteral");
       if (varDecl.init.type === "IntegerLiteral") {
         assertEquals(varDecl.init.value, 5);
@@ -112,6 +132,10 @@ describe("AST Nodes", () => {
   });
 
   describe("Statements", () => {
+    /**
+     * Tests return statement with expression
+     * Verifies return value expression is properly stored
+     */
     it("creates return statement node", () => {
       const returnStmt: ReturnStatement = {
         type: "ReturnStatement",
@@ -130,6 +154,12 @@ describe("AST Nodes", () => {
       }
     });
 
+    /**
+     * Tests if statement structure including:
+     * - Condition expression
+     * - Consequence block
+     * - Optional alternative block (testing null case)
+     */
     it("creates if statement node", () => {
       const ifStmt: IfStatement = {
         type: "IfStatement",
@@ -155,6 +185,14 @@ describe("AST Nodes", () => {
       assertEquals(ifStmt.alternative, null);
     });
 
+    /**
+     * Tests for statement with all components:
+     * - Initialization
+     * - Condition
+     * - Update expression
+     * - Loop body
+     * Represents a typical 'for i := 0; i < 10; i++' loop
+     */
     it("creates for statement node", () => {
       const forStmt: ForStatement = {
         type: "ForStatement",
@@ -219,6 +257,9 @@ describe("AST Nodes", () => {
   });
 
   describe("Expressions", () => {
+    /**
+     * Tests identifier node creation and value storage
+     */
     it("creates identifier node", () => {
       const ident: Identifier = {
         type: "Identifier",
@@ -230,6 +271,13 @@ describe("AST Nodes", () => {
       assertEquals(ident.value, "x");
     });
 
+    /**
+     * Tests all literal types:
+     * - Integer literals
+     * - String literals
+     * - Boolean literals
+     * Ensures proper value storage for each type
+     */
     it("creates literal nodes", () => {
       const intLit: IntegerLiteral = {
         type: "IntegerLiteral",
@@ -254,6 +302,12 @@ describe("AST Nodes", () => {
       assertEquals(boolLit.value, true);
     });
 
+    /**
+     * Tests infix expression structure:
+     * - Operator storage
+     * - Left and right operands
+     * Represents basic arithmetic expression
+     */
     it("creates infix expression node", () => {
       const infixExpr: InfixExpression = {
         type: "InfixExpression",
@@ -284,6 +338,12 @@ describe("AST Nodes", () => {
       }
     });
 
+    /**
+     * Tests function call expression:
+     * - Function identifier
+     * - Multiple arguments
+     * Represents typical function invocation
+     */
     it("creates call expression node", () => {
       const callExpr: CallExpression = {
         type: "CallExpression",
