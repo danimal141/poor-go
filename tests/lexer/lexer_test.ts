@@ -30,7 +30,7 @@ if a > 10 {
 
 import { describe, it } from "std/testing/bdd.ts";
 import { assertEquals } from "std/assert/mod.ts";
-import { Lexer } from "../../src/lexer/lexer.ts";
+import { Lexer } from "@/lexer/lexer.ts";
 import { TokenType } from "@/lexer/token.ts";
 
 describe("Lexer", () => {

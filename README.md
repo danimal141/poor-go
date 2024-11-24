@@ -200,7 +200,7 @@ deno task test
 ## Project Structure
 
 ```
-simplego/
+simple-go/
 ├── src/
 │   ├── lexer/
 │   ├── parser/
