@@ -42,7 +42,7 @@
     "indentWidth": 2,
     "semiColons": true,
     "proseWrap": "preserve",
-    "include": ["src/", "tests/"],
+    "include": ["src/"],
     "exclude": ["dist", "node_modules"]
   }
 }

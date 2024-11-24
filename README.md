@@ -207,7 +207,6 @@ simple-go/
 │   ├── semantic/
 │   └── codegen/
 ├── examples/
-├── tests/
 └── README.md
 ```
 
