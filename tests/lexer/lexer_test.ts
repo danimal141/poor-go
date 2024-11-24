@@ -1,3 +1,34 @@
+/*
+Reference: https://github.com/golang/go/blob/go1.23.0/src/text/scanner/example_test.go
+
+func Example() {
+	const src = `
+// This is scanned code.
+if a > 10 {
+	someParsable = text
+}`
+
+	var s scanner.Scanner
+	s.Init(strings.NewReader(src))
+	s.Filename = "example"
+	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
+		fmt.Printf("%s: %s\n", s.Position, s.TokenText())
+	}
+
+	// Output:
+	// example:3:1: if
+	// example:3:4: a
+	// example:3:6: >
+	// example:3:8: 10
+	// example:3:11: {
+	// example:4:2: someParsable
+	// example:4:15: =
+	// example:4:17: text
+	// example:5:1: }
+}
+
+*/
+
 import { describe, it } from "std/testing/bdd.ts";
 import { assertEquals } from "std/assert/mod.ts";
 import { Lexer } from "../../src/lexer/lexer.ts";
