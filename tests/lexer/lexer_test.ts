@@ -158,12 +158,19 @@ func add(x int) int {
     return x + 1;
 }`;
 
+      /*
+[line 1]
+[line 2]f u n c   a d d ( x   i n t )  i n t  {
+        1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3
+        ^         ^     ^ ^   ^     ^  ^      ^
+      */
+
       const expectedPositions = [
         { line: 2, column: 1 }, // func
-        { line: 2, column: 5 }, // add
-        { line: 2, column: 8 }, // (
-        { line: 2, column: 9 }, // x
-        { line: 2, column: 11 }, // int
+        { line: 2, column: 6 }, // add
+        { line: 2, column: 9 }, // (
+        { line: 2, column: 10 }, // x
+        { line: 2, column: 12 }, // int
         { line: 2, column: 15 }, // )
         { line: 2, column: 17 }, // int
         { line: 2, column: 21 }, // {
