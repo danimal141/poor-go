@@ -1,5 +1,3 @@
-// Reference: https://github.com/golang/go/blob/go1.23.0/src/text/scanner/scanner.go
-
 import { lookupIdent, Token, TokenType } from "./token.ts";
 
 /**
@@ -33,7 +31,7 @@ export class Lexer {
     if (this.readPosition >= this.input.length) {
       this.ch = ""; // End of input
     } else {
-      this.ch = this.input.charAt(this.readPosition); // Use charAt() for type safety
+      this.ch = this.input.charAt(this.readPosition);
     }
 
     this.position = this.readPosition;
@@ -50,7 +48,6 @@ export class Lexer {
 
   /**
    * Looks at the next character without advancing the lexer's position.
-   * Used for handling two-character tokens like '==', '!=', etc.
    */
   private peekChar(): string {
     if (this.readPosition >= this.input.length) {
@@ -64,9 +61,41 @@ export class Lexer {
    */
   private skipWhitespace(): void {
     while (
-      this.ch === " " || this.ch === "\t" || this.ch === "\n" ||
+      this.ch === " " ||
+      this.ch === "\t" ||
+      this.ch === "\n" ||
       this.ch === "\r"
     ) {
+      this.readChar();
+    }
+  }
+
+  /**
+   * Skips a single-line comment.
+   */
+  private skipSingleLineComment(): void {
+    while (this.ch !== "\n" && this.ch !== "") {
+      this.readChar();
+    }
+  }
+
+  /**
+   * Skips a multi-line comment.
+   * Returns true if the comment was properly terminated, false otherwise.
+   */
+  private skipMultiLineComment(): boolean {
+    this.readChar(); // consume the current "/"
+    this.readChar(); // consume the "*"
+
+    while (true) {
+      if (this.ch === "") {
+        return false; // Unterminated comment
+      }
+      if (this.ch === "*" && this.peekChar() === "/") {
+        this.readChar(); // consume the "*"
+        this.readChar(); // consume the "/"
+        return true;
+      }
       this.readChar();
     }
   }
@@ -95,14 +124,33 @@ export class Lexer {
   }
 
   /**
+   * Reads a string literal, handling escape sequences.
+   * String literals are enclosed in double quotes.
+   */
+  private readString(): string {
+    const position = this.position + 1; // Skip the opening quote
+    this.readChar(); // Consume the opening quote
+
+    while (this.ch !== '"' && this.ch !== "" && this.ch !== "\n") {
+      this.readChar();
+    }
+
+    const str = this.input.slice(position, this.position);
+    if (this.ch === '"') {
+      this.readChar(); // Consume the closing quote
+      return str;
+    }
+
+    return str; // String was not properly terminated
+  }
+
+  /**
    * Main interface of the Lexer.
    * Returns the next token from the input.
-   * When it reaches the end of input, it returns EOF token.
    */
   public nextToken(): Token {
     this.skipWhitespace();
 
-    // Initialize token with current position information
     const token: Token = {
       type: TokenType.ILLEGAL,
       literal: this.ch,
@@ -110,131 +158,165 @@ export class Lexer {
       column: this.column,
     };
 
-    // Process current character and determine token type
     switch (this.ch) {
       case "=":
         if (this.peekChar() === "=") {
-          // Handle two-character token '=='
-          const ch = this.ch;
           this.readChar();
           token.type = TokenType.EQ;
-          token.literal = ch + this.ch;
+          token.literal = "==";
         } else {
-          // Single character assignment token
           token.type = TokenType.ASSIGN;
-          token.literal = this.ch;
+          token.literal = "=";
         }
         break;
+
       case "!":
         if (this.peekChar() === "=") {
-          // Handle two-character token '!='
-          const ch = this.ch;
           this.readChar();
           token.type = TokenType.NOT_EQ;
-          token.literal = ch + this.ch;
+          token.literal = "!=";
         } else {
           token.type = TokenType.BANG;
-          token.literal = this.ch;
+          token.literal = "!";
         }
         break;
+
       case "<":
         if (this.peekChar() === "=") {
-          // Handle two-character token '<='
-          const ch = this.ch;
           this.readChar();
           token.type = TokenType.LTE;
-          token.literal = ch + this.ch;
+          token.literal = "<=";
         } else {
           token.type = TokenType.LT;
-          token.literal = this.ch;
+          token.literal = "<";
         }
         break;
+
       case ">":
         if (this.peekChar() === "=") {
-          // Handle two-character token '>='
-          const ch = this.ch;
           this.readChar();
           token.type = TokenType.GTE;
-          token.literal = ch + this.ch;
+          token.literal = ">=";
         } else {
           token.type = TokenType.GT;
-          token.literal = this.ch;
+          token.literal = ">";
         }
         break;
+
+      case "/":
+        if (this.peekChar() === "/") {
+          this.skipSingleLineComment();
+          return this.nextToken();
+        } else if (this.peekChar() === "*") {
+          if (!this.skipMultiLineComment()) {
+            token.type = TokenType.ILLEGAL;
+            token.literal = "Unterminated multi-line comment";
+            return token;
+          }
+          return this.nextToken();
+        } else {
+          token.type = TokenType.SLASH;
+          token.literal = "/";
+        }
+        break;
+
+      case '"':
+        token.type = TokenType.STRING;
+        token.literal = this.readString();
+        return token;
+
       case "+":
         token.type = TokenType.PLUS;
-        token.literal = this.ch;
+        token.literal = "+";
         break;
+
       case "-":
         token.type = TokenType.MINUS;
-        token.literal = this.ch;
+        token.literal = "-";
         break;
-      case "/":
-        token.type = TokenType.SLASH;
-        token.literal = this.ch;
-        break;
+
       case "*":
         token.type = TokenType.ASTERISK;
-        token.literal = this.ch;
+        token.literal = "*";
         break;
-      // Single character tokens
+
       case ";":
         token.type = TokenType.SEMICOLON;
-        token.literal = this.ch;
+        token.literal = ";";
         break;
+
       case ":":
         token.type = TokenType.COLON;
-        token.literal = this.ch;
+        token.literal = ":";
         break;
+
       case "(":
         token.type = TokenType.LPAREN;
-        token.literal = this.ch;
+        token.literal = "(";
         break;
+
       case ")":
         token.type = TokenType.RPAREN;
-        token.literal = this.ch;
+        token.literal = ")";
         break;
+
       case ",":
         token.type = TokenType.COMMA;
-        token.literal = this.ch;
+        token.literal = ",";
         break;
+
       case "{":
         token.type = TokenType.LBRACE;
-        token.literal = this.ch;
+        token.literal = "{";
         break;
+
       case "}":
         token.type = TokenType.RBRACE;
-        token.literal = this.ch;
+        token.literal = "}";
         break;
+
       case "":
         token.type = TokenType.EOF;
         token.literal = "";
         break;
+
       default:
         if (this.isLetter(this.ch)) {
-          // Handle identifiers and keywords
           token.literal = this.readIdentifier();
-          token.type = lookupIdent(token.literal); // Check if it's a keyword
-          return token; // Early return as readIdentifier has already advanced the position
+          token.type = lookupIdent(token.literal);
+          return token;
         } else if (this.isDigit(this.ch)) {
-          // Handle integer literals
           token.type = TokenType.INT;
           token.literal = this.readNumber();
-          return token; // Early return as readNumber has already advanced the position
+          return token;
         } else {
-          // Unknown character
           token.type = TokenType.ILLEGAL;
           token.literal = this.ch;
         }
     }
 
-    this.readChar(); // Advance to next character
+    this.readChar();
     return token;
   }
 
   /**
+   * Returns all tokens from the input.
+   * Continues scanning until it reaches EOF token.
+   */
+  public scan(): Token[] {
+    const tokens: Token[] = [];
+    let token: Token;
+
+    do {
+      token = this.nextToken();
+      tokens.push(token);
+    } while (token.type !== TokenType.EOF);
+
+    return tokens;
+  }
+
+  /**
    * Checks if a character is a letter or underscore.
-   * Used for identifying the start and continuation of identifiers.
    */
   private isLetter(ch: string): boolean {
     return /[a-zA-Z_]/.test(ch);
@@ -242,7 +324,6 @@ export class Lexer {
 
   /**
    * Checks if a character is a digit.
-   * Used for identifying numeric literals.
    */
   private isDigit(ch: string): boolean {
     return /[0-9]/.test(ch);
