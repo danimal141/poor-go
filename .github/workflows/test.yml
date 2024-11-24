@@ -43,7 +43,6 @@ jobs:
       - name: Type check
         run: |
           deno check src/
-          deno check tests/
 
       - name: Run tests
         run: deno test --allow-read
