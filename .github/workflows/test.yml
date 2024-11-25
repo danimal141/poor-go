@@ -9,6 +9,13 @@ on:
       - 'deno.json'
       - 'deno.lock'
       - '.github/workflows/test.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.ts'
+      - 'deno.json'
+      - 'deno.lock'
+      - '.github/workflows/test.yml'
 
 jobs:
   test:
