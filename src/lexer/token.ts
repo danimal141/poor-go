@@ -1,56 +1,58 @@
-export enum TokenType {
+export const TokenType = {
   // Special tokens
-  ILLEGAL = "ILLEGAL", // Unknown characters
-  EOF = "EOF", // End of file
+  ILLEGAL: "ILLEGAL",
+  EOF: "EOF",
 
   // Identifiers + literals
-  IDENT = "IDENT", // add, foobar, x, y, ...
-  INT = "INT", // 123456
-  STRING = "STRING", // "hello world"
+  IDENT: "IDENT", // add, foobar, x, y, ...
+  INT: "INT", // 123456
+  STRING: "STRING", // "hello world"
 
   // Operators
-  ASSIGN = "=",
-  PLUS = "+",
-  MINUS = "-",
-  BANG = "!",
-  ASTERISK = "*",
-  SLASH = "/",
+  ASSIGN: "=",
+  PLUS: "+",
+  MINUS: "-",
+  BANG: "!",
+  ASTERISK: "*",
+  SLASH: "/",
 
   // Comparison operators
-  EQ = "==",
-  NOT_EQ = "!=",
-  LT = "<",
-  GT = ">",
-  LTE = "<=",
-  GTE = ">=",
+  EQ: "==",
+  NOT_EQ: "!=",
+  LT: "<",
+  GT: ">",
+  LTE: "<=",
+  GTE: ">=",
 
   // Delimiters
-  COMMA = ",",
-  SEMICOLON = ";",
-  COLON = ":",
+  COMMA: ",",
+  SEMICOLON: ";",
+  COLON: ":",
 
-  LPAREN = "(",
-  RPAREN = ")",
-  LBRACE = "{",
-  RBRACE = "}",
+  LPAREN: "(",
+  RPAREN: ")",
+  LBRACE: "{",
+  RBRACE: "}",
 
   // Keywords
-  FUNC = "FUNC",
-  RETURN = "RETURN",
-  IF = "IF",
-  ELSE = "ELSE",
-  FOR = "FOR",
-  VAR = "VAR",
+  FUNC: "FUNC",
+  RETURN: "RETURN",
+  IF: "IF",
+  ELSE: "ELSE",
+  FOR: "FOR",
+  VAR: "VAR",
 
-  INT_TYPE = "INT_TYPE",
-  STRING_TYPE = "STRING_TYPE",
-  BOOL_TYPE = "BOOL_TYPE",
+  INT_TYPE: "INT_TYPE",
+  STRING_TYPE: "STRING_TYPE",
+  BOOL_TYPE: "BOOL_TYPE",
 
-  TRUE = "TRUE",
-  FALSE = "FALSE",
+  TRUE: "TRUE",
+  FALSE: "FALSE",
 
-  PACKAGE = "PACKAGE",
-}
+  PACKAGE: "PACKAGE",
+} as const;
+
+export type TokenType = typeof TokenType[keyof typeof TokenType];
 
 export interface Token {
   type: TokenType; // Type of the token
@@ -75,7 +77,6 @@ export const KEYWORDS = new Map<string, TokenType>([
   ["package", TokenType.PACKAGE],
 ]);
 
-// Check if the identifier is a keyword
 export function lookupIdent(ident: string): TokenType {
   return KEYWORDS.get(ident) || TokenType.IDENT;
 }
