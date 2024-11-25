@@ -1,0 +1,8 @@
+bin
+.vscode
+deno.lock
+Dockerfile
+docker-compose.yml
+
+node_modules
+dist
