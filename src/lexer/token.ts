@@ -1,13 +1,12 @@
-// Update src/lexer/token.ts
 export const TokenType = {
   // Special tokens
   ILLEGAL: "ILLEGAL",
   EOF: "EOF",
 
   // Identifiers + literals
-  IDENT: "IDENT",
-  INT: "INT",
-  STRING: "STRING",
+  IDENT: "IDENT", // add, foobar, x, y, ...
+  INT: "INT", // 123456
+  STRING: "STRING", // "hello world"
 
   // Operators
   ASSIGN: "=",
@@ -56,10 +55,10 @@ export const TokenType = {
 export type TokenType = typeof TokenType[keyof typeof TokenType];
 
 export interface Token {
-  type: TokenType;
-  literal: string;
-  line: number;
-  column: number;
+  type: TokenType; // Type of the token
+  literal: string; // Actual string value
+  line: number; // Line number in source
+  column: number; // Column number in source
 }
 
 // Keyword map
