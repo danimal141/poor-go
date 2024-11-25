@@ -66,7 +66,7 @@ describe("Lexer", () => {
       }
     });
 
-    it("should tokenize a simple program", () => {
+    it("should tokenize a poor program", () => {
       const input = `
 package main
 
@@ -205,7 +205,7 @@ func add(x int) int {
   });
 
   describe("scan", () => {
-    it("should scan a complete simple program", () => {
+    it("should scan a complete poor program", () => {
       const input = `package main
 
 func greet(name string) string {

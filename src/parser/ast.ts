@@ -17,7 +17,7 @@ export interface Node {
 
 /**
  * Root node representing the entire program
- * In SimpleGo, all programs must start with 'package main'
+ * In PoorGo, all programs must start with 'package main'
  * followed by function and variable declarations
  */
 export interface Program extends Node {
@@ -32,7 +32,7 @@ export interface Program extends Node {
 
 /**
  * Represents top-level declarations
- * SimpleGo only supports function and variable declarations
+ * PoorGo only supports function and variable declarations
  */
 export interface Declaration extends Node {
   type: "FunctionDeclaration" | "VariableDeclaration";
@@ -74,7 +74,7 @@ export interface Parameter {
 
 /**
  * Represents type information
- * SimpleGo only supports int, string, and bool
+ * PoorGo only supports int, string, and bool
  */
 export interface TypeNode extends Node {
   type: "TypeNode";

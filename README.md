@@ -1,12 +1,18 @@
-# SimpleGo
+# PoorGo Language Specification
 
-## Language Specification
+## 1. Overview
+PoorGo is a subset implementation of Go that generates LLVM IR and compiles to native code using the LLVM toolchain.
 
-### 1. Basic Syntax
+### Design Goals
+- Poor and understandable implementation
+- Efficient code generation using LLVM
+- Suitable feature set for educational purposes
 
-Every program must start with `package main` and contain a `main` function:
+## 2. Language Syntax
 
+### 2.1 Program Structure
 ```go
+// All programs must follow this format
 package main
 
 func main() {
@@ -14,20 +20,16 @@ func main() {
 }
 ```
 
-### 2. Type System
-
-Limited to essential primitive types:
-
+### 2.2 Basic Types
 ```go
-int    // Integer
-string // String
-bool   // Boolean
+int     // 32-bit integer
+string  // String
+bool    // Boolean
 ```
 
-### 3. Variable Declarations
-
+### 2.3 Variable Declarations
 ```go
-// Implicit type inference (using := operator)
+// Type inference
 x := 42
 name := "hello"
 flag := true
@@ -36,31 +38,22 @@ flag := true
 var x int = 42
 var name string = "hello"
 var flag bool = true
-
-// Constants
-const pi = 3.14
-const hello = "world"
 ```
 
-### 4. Functions
-
+### 2.4 Function Definitions
 ```go
 // Basic function
 func add(x int, y int) int {
     return x + y
 }
 
-// Multiple return values
-func divide(x int, y int) (int, error) {
-    if y == 0 {
-        return 0, error("division by zero")
-    }
-    return x / y, nil
+// Function without return value
+func printValue(x int) {
+    print(x)
 }
 ```
 
-### 5. Control Structures
-
+### 2.5 Control Structures
 ```go
 // If statement
 if x > 0 {
@@ -71,13 +64,13 @@ if x > 0 {
     // zero
 }
 
-// For loops (three variants)
+// For loops
 for i := 0; i < 10; i++ {
-    // Standard for loop
+    // Counter loop
 }
 
 for condition {
-    // While-loop style
+    // While loop equivalent
 }
 
 for {
@@ -85,8 +78,7 @@ for {
 }
 ```
 
-### 6. Basic Operators
-
+### 2.6 Operators
 ```go
 // Arithmetic operators
 +    // Addition
@@ -108,29 +100,94 @@ for {
 !    // Logical NOT
 ```
 
-### 7. Built-in Functions
+## 3. Compiler Implementation
 
+### 3.1 Compilation Pipeline
+```mermaid
+graph TD
+    A[Source Code] --> B[Lexical Analysis]
+    B --> C[Syntax Analysis]
+    C --> D[Semantic Analysis]
+    D --> E[LLVM IR Generation]
+    E --> F[LLVM Optimization]
+    F --> G[Executable]
+```
+
+### 3.2 Compiler Components
+1. **Lexer**
+   - Token generation
+   - Source position tracking
+   - Basic error detection
+
+2. **Parser**
+   - AST construction
+   - Grammar validation
+   - Syntax error reporting
+
+3. **Semantic Analyzer**
+   - Type checking
+   - Symbol resolution
+   - Semantic constraint validation
+
+4. **Code Generator**
+   - LLVM IR generation
+   - Runtime function integration
+   - Optimization settings
+
+### 3.3 Built-in Functions
 ```go
-print(value)      // Output to stdout
+print(value)      // Output value to stdout
 len(value)        // Get string length
 error(message)    // Create an error
 ```
 
-### 8. Comments
+## 4. Runtime Features
 
-```go
-// Single-line comment
+### 4.1 Memory Management
+- Stack allocation preferred
+- Using LLVM built-in memory management
 
-/*
-  Multi-line
-  comment
-*/
+### 4.2 Error Handling
+- Compile-time error detection
+- Runtime panic mechanism
+
+## 5. Command Line Interface
+
+### 5.1 Compilation Commands
+```bash
+# Basic compilation
+$ pogo source.sg
+
+# Specify output file
+$ pogo -o program source.sg
+
+# Output LLVM IR
+$ pogo --emit-llvm source.sg
+
+# Specify optimization level
+$ pogo -O2 source.sg
 ```
 
-### 9. Example Program
+### 5.2 Options
+```
+-o <file>      Specify output filename
+-O<level>      Optimization level (0-3)
+--emit-llvm    Output LLVM IR
+-v, --verbose  Enable verbose output
+```
 
-A complete program that calculates Fibonacci numbers:
+## 6. Limitations
+- No classes/object-oriented features
+- No generics
+- No concurrency (goroutines/channels)
+- No pointers
+- No slices/arrays
+- No maps
+- No structs
+- No interfaces (except for error)
+- No packages (main package only)
 
+## 7. Example: Complete Program
 ```go
 package main
 
@@ -142,65 +199,52 @@ func fibonacci(n int) int {
 }
 
 func main() {
-    // Calculate 10th Fibonacci number
     result := fibonacci(10)
     print(result)
 }
 ```
 
-### 10. Limitations
+## 8. Error Message Format
+```
+[Phase] Error at line <line>, column <column>: <message>
 
-The following features are intentionally omitted:
-
-- Classes/Object-oriented features
-- Generics
-- Concurrency (goroutines/channels)
-- Pointers
-- Slices/Arrays
-- Maps
-- Structs
-- Interfaces (except for error)
-- Packages (main package only)
-
-## Implementation Details
-
-The compiler is implemented in the following phases:
-
-1. Lexical Analysis (Lexer)
-   - Breaks source code into tokens
-
-2. Syntax Analysis (Parser)
-   - Generates Abstract Syntax Tree (AST) from tokens
-
-3. Semantic Analysis
-   - Type checking and semantic validation
-
-4. Code Generation
-   - Generates target code from AST
-
-## Development Environment
-
-- Deno 2.x
-- TypeScript 5.x
-- Docker (optional)
-
-## Building and Running
-
-```bash
-# Build compiler
-deno task build
-
-# Compile and run a program
-deno task run examples/fibonacci.sg
-
-# Run tests
-deno task test
+Examples:
+[Lexer] Error at line 1, column 5: Invalid character '#'
+[Parser] Error at line 3, column 10: Expected '{' after function declaration
+[Semantic] Error at line 5, column 15: Undefined variable 'x'
+[CodeGen] Error: Failed to generate LLVM IR
 ```
 
-## Project Structure
+## 9. Development Phases
 
+### Phase 1: Basic Structure
+- Package declaration
+- Main function
+- Print statement
+- Basic LLVM IR generation
+
+### Phase 2: Core Features
+- Variable declarations
+- Basic expressions
+- Control structures
+- Function definitions
+
+### Phase 3: Type System
+- Type checking
+- Type inference
+- Built-in types
+- Error types
+
+### Phase 4: Optimizations
+- LLVM optimization passes
+- Debug information
+- Error recovery
+
+## 10. Best Practices
+
+### Code Organization
 ```
-simple-go/
+poor-go/
 ├── src/
 │   ├── lexer/
 │   ├── parser/
@@ -210,37 +254,38 @@ simple-go/
 └── README.md
 ```
 
-## Features
+### Development Flow
+1. Write tests
+2. Implement feature
+3. Generate LLVM IR
+4. Verify output
+5. Optimize if needed
 
-- Simple and predictable syntax
-- Static typing with type inference
+### Error Handling
 - Clear error messages
-- Single file compilation
-- No external dependencies
-- Easy to learn and implement
+- Source location tracking
+- Graceful error recovery
+- Multiple error reporting
 
-## Design Goals
+## 11. Tool Integration
 
-1. **Simplicity**
-   - Minimal set of features
-   - Consistent syntax
-   - Clear semantics
+### LLVM Tools
+```bash
+# Generate LLVM bitcode
+$ llvm-as input.ll -o output.bc
 
-2. **Educational Value**
-   - Easy to understand compiler implementation
-   - Clear compilation phases
-   - Straightforward debugging
+# View generated assembly
+$ llc output.bc -o output.s
 
-3. **Reliability**
-   - Static type checking
-   - Clear error reporting
-   - Predictable behavior
+# Generate executable
+$ clang output.bc -o program
+```
 
-## Contributing
+### Debug Support
+```bash
+# Generate debug information
+$ pogo -g source.sg
 
-Contributions are welcome! Please read our contributing guidelines before submitting pull requests.
-
-## License
-
-MIT License
-
+# Use LLVM debugging tools
+$ lldb ./program
+```
