@@ -3,6 +3,7 @@ bin
 deno.lock
 Dockerfile
 docker-compose.yml
+README.ja.md
 
 node_modules
 dist

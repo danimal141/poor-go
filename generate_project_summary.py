@@ -1,5 +1,8 @@
 # Reference: https://github.com/Olemi-llm-apprentice/generate-project-summary
 # Generate a project summary for LLM
+#
+# Usage:
+# python generate_project_summary.py
 
 import os
 import fnmatch
@@ -58,7 +61,6 @@ def generate_project_summary(project_dir):
                             summary += f'{subindent}- {item}\n'
                             content = read_file_contents(item_path)
                             if content.strip():
-                                # ファイル名をプロジェクト名からの相対パスで表示
                                 relative_file_path = os.path.relpath(item_path, project_dir)
                                 file_contents_section += f'### {relative_file_path}\n\n```\n{content}\n```\n\n'
                         else:
