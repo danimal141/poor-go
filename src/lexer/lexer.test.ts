@@ -159,9 +159,9 @@ func add(x int) int {
 
       /*
 [line 1]
-[line 2]f u n c   a d d ( x   i n t )  i n t  {
+[line 2]f u n c   a d d ( x   i n t )   i n t   {
         1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3
-        ^         ^     ^ ^   ^     ^  ^      ^
+        ^         ^     ^ ^   ^     ^   ^       ^
       */
 
       const expectedPositions = [
