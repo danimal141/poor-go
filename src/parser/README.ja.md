@@ -1,6 +1,13 @@
-`package main { print("Hello World!") }` という入力を解析して、抽象構文木(AST)を生成。
+## Parser (構文解析器)
 
-1. 基本構造:
+### 概要
+
+字句解析器(Lexer)から受け取ったトークン列を解析して、抽象構文木(AST)を生成する。
+入力例: `package main { print("Hello World!") }`
+
+### 実装コンポーネント
+
+#### 1. 基本構造
 
 ```typescript
 export class Parser {
@@ -10,7 +17,7 @@ export class Parser {
 }
 ```
 
-2. パースの流れ：
+#### 2. パースの流れ
 
 ```typescript
 parseProgram(): Program {
@@ -19,11 +26,12 @@ parseProgram(): Program {
     this.throwError("Program must start with 'package' keyword");
   }
 
-  // 2. main パッケージ名の確認
+  // 2. パッケージ名（識別子）の確認
   this.nextToken();
-  if (this.currentToken.literal !== "main") {
-    this.throwError("Package name must be 'main'");
+  if (!this.checkToken(this.currentToken, TokenType.IDENT)) {
+    this.throwError("Expected package name");
   }
+  const packageName = this.currentToken.literal;
 
   // 3. { の確認
   this.nextToken();
@@ -44,7 +52,7 @@ parseProgram(): Program {
   // 5. プログラム全体のASTを構築
   const program: Program = {
     type: "Program",
-    package: "main",
+    package: packageName,
     declarations: [mainFunction],
     location: this.currentLocation(),
   };
@@ -53,7 +61,7 @@ parseProgram(): Program {
 }
 ```
 
-3. ステートメントのパース：
+#### 3. ステートメントのパース
 
 ```typescript
 private parseStatement(): Statement {
@@ -65,7 +73,7 @@ private parseStatement(): Statement {
 }
 ```
 
-4. print関数呼び出しのパース：
+#### 4. print関数呼び出しのパース
 
 ```typescript
 private parseCallExpression(): CallExpression {
@@ -96,7 +104,7 @@ private parseCallExpression(): CallExpression {
 }
 ```
 
-5. 生成されるASTの構造：
+#### 5. 生成されるASTの構造
 
 ```typescript
 {
@@ -128,18 +136,25 @@ private parseCallExpression(): CallExpression {
 }
 ```
 
-6. エラー処理：
+### 構文エラー検出
 
-```typescript
-private throwError(message: string): never {
-  // 行番号と列番号を含むエラーメッセージを生成
-  throw new Error(
-    `Parser error at line ${this.currentToken.line}, column ${this.currentToken.column}: ${message}`
-  );
-}
+以下のような構文エラーを検出：
+
+```go
+// packageキーワード欠落
+main { print("hello") }
+
+// パッケージ名（識別子）欠落
+package { print("hello") }
+
+// 開き中括弧欠落
+package main print("hello")
+
+// 関数呼び出しの括弧欠落
+package main { print "hello" }
 ```
 
-このパーサーの特徴：
+### 特徴
 
 1. 再帰下降型パーサー
    - トップダウンでASTを構築
@@ -151,8 +166,12 @@ private throwError(message: string): never {
 
 3. 型安全性
    - TypeScriptの型システムを活用
-   - `as const`による厳密な型チェック
+   - 厳密な型チェック
 
-4. 制限
-   - 現時点では `package main { print("文字列") }` の形式のみ対応
+4. 責務の分離
+   - 構文的な正しさのみを検証
+   - 意味的な制約（パッケージ名が"main"であること等）はSemanticAnalyzerに委譲
+
+5. 制限
+   - 現時点では `package <識別子> { print("文字列") }` の形式のみ対応
    - エラーリカバリは未実装
