@@ -1,3 +1,4 @@
+// src/parser/parser.ts
 import { Lexer } from "@/lexer/lexer.ts";
 import { Token, TokenType } from "@/lexer/token.ts";
 import {
@@ -8,9 +9,11 @@ import {
   FunctionDeclaration,
   Identifier,
   Location,
+  Parameter,
   Program,
   Statement,
   StringLiteral,
+  TypeNode,
 } from "@/parser/ast.ts";
 
 export class Parser {
@@ -20,7 +23,7 @@ export class Parser {
 
   constructor(lexer: Lexer) {
     this.lexer = lexer;
-    // to fill in currentToken and peerToken
+    // To fill in current / peer tokens
     this.nextToken();
     this.nextToken();
   }
@@ -57,42 +60,172 @@ export class Parser {
   }
 
   parseProgram(): Program {
+    // Parse package declaration
     if (!this.checkToken(this.currentToken, TokenType.PACKAGE)) {
       this.throwError("Program must start with 'package' keyword");
     }
-
     this.nextToken();
 
-    if (this.currentToken.literal !== "main") {
-      this.throwError("Package name must be 'main'");
+    // Package name should be an identifier
+    if (!this.checkToken(this.currentToken, TokenType.IDENT)) {
+      this.throwError("Expected package name");
     }
+    const packageName = this.currentToken.literal;
+    this.nextToken();
 
     const program: Program = {
       type: "Program",
-      package: "main",
+      package: packageName,
       declarations: [],
       location: this.currentLocation(),
     };
 
-    // Move to next token after 'main'
-    this.nextToken();
-
-    // Now we expect a '{'
-    if (!this.checkToken(this.currentToken, TokenType.LBRACE)) {
+    // Parse function declarations or block
+    if (this.checkToken(this.currentToken, TokenType.FUNC)) {
+      // Explicit function declaration
+      const funcDecl = this.parseFunctionDeclaration();
+      program.declarations.push(funcDecl);
+    } else if (!this.checkToken(this.currentToken, TokenType.LBRACE)) {
       this.throwError("Expected '{' after package declaration");
+    } else {
+      // Implicit main function
+      const mainFunction: FunctionDeclaration = {
+        type: "FunctionDeclaration",
+        name: "main",
+        parameters: [],
+        returnType: null,
+        body: this.parseBlock(),
+        location: this.currentLocation(),
+      };
+      program.declarations.push(mainFunction);
     }
 
-    const mainFunction: FunctionDeclaration = {
-      type: "FunctionDeclaration",
-      name: "main",
-      parameters: [],
-      returnType: null,
-      body: this.parseBlock(),
-      location: this.currentLocation(),
-    };
-
-    program.declarations.push(mainFunction);
     return program;
+  }
+
+  private parseFunctionDeclaration(): FunctionDeclaration {
+    const location = this.currentLocation();
+    this.nextToken(); // consume 'func'
+
+    // Parse function name
+    if (!this.checkToken(this.currentToken, TokenType.IDENT)) {
+      this.throwError("Expected function name");
+    }
+    const name = this.currentToken.literal;
+    this.nextToken();
+
+    // Parse parameters
+    if (!this.checkToken(this.currentToken, TokenType.LPAREN)) {
+      this.throwError("Expected '(' after function name");
+    }
+    const parameters = this.parseFunctionParameters();
+
+    // Parse return type (optional)
+    const returnType = this.parseOptionalType();
+
+    // Parse function body
+    if (!this.checkToken(this.currentToken, TokenType.LBRACE)) {
+      this.throwError("Expected '{' after function declaration");
+    }
+
+    return {
+      type: "FunctionDeclaration",
+      name,
+      parameters,
+      returnType,
+      body: this.parseBlock(),
+      location,
+    };
+  }
+
+  private parseFunctionParameters(): Parameter[] {
+    const parameters: Parameter[] = [];
+
+    this.nextToken(); // consume '('
+
+    while (!this.checkToken(this.currentToken, TokenType.RPAREN)) {
+      if (!this.checkToken(this.currentToken, TokenType.IDENT)) {
+        this.throwError("Expected parameter name");
+      }
+
+      const paramName = this.currentToken.literal;
+      const paramLocation = this.currentLocation();
+      this.nextToken();
+
+      // Parse parameter type
+      if (
+        !this.checkToken(this.currentToken, TokenType.INT_TYPE) &&
+        !this.checkToken(this.currentToken, TokenType.STRING_TYPE) &&
+        !this.checkToken(this.currentToken, TokenType.BOOL_TYPE)
+      ) {
+        this.throwError("Expected parameter type");
+      }
+
+      // Map token type to TypeNode typeType
+      const typeType = ((): "int" | "string" | "bool" => {
+        switch (this.currentToken.literal) {
+          case "int":
+            return "int";
+          case "string":
+            return "string";
+          case "bool":
+            return "bool";
+          default:
+            this.throwError("Invalid type");
+            return "int"; // unreachable
+        }
+      })();
+
+      parameters.push({
+        name: paramName,
+        type: {
+          type: "TypeNode",
+          typeType,
+          location: this.currentLocation(),
+        },
+        location: paramLocation,
+      });
+
+      this.nextToken();
+
+      if (this.checkToken(this.currentToken, TokenType.COMMA)) {
+        this.nextToken();
+      }
+    }
+
+    this.nextToken(); // consume ')'
+    return parameters;
+  }
+
+  private parseOptionalType(): TypeNode | null {
+    if (
+      this.checkToken(this.currentToken, TokenType.INT_TYPE) ||
+      this.checkToken(this.currentToken, TokenType.STRING_TYPE) ||
+      this.checkToken(this.currentToken, TokenType.BOOL_TYPE)
+    ) {
+      const typeType = ((): "int" | "string" | "bool" => {
+        switch (this.currentToken.literal) {
+          case "int":
+            return "int";
+          case "string":
+            return "string";
+          case "bool":
+            return "bool";
+          default:
+            this.throwError("Invalid type");
+            return "int"; // unreachable
+        }
+      })();
+
+      const typeNode: TypeNode = {
+        type: "TypeNode",
+        typeType,
+        location: this.currentLocation(),
+      };
+      this.nextToken();
+      return typeNode;
+    }
+    return null;
   }
 
   private parseBlock(): BlockStatement {
@@ -102,19 +235,17 @@ export class Parser {
       location: this.currentLocation(),
     };
 
-    this.nextToken();
+    this.nextToken(); // consume '{'
 
     while (
       !this.checkToken(this.currentToken, TokenType.RBRACE) &&
       !this.checkToken(this.currentToken, TokenType.EOF)
     ) {
       const stmt = this.parseStatement();
-      block.statements.push(stmt);
+      if (stmt) {
+        block.statements.push(stmt);
+      }
       this.nextToken();
-    }
-
-    if (!this.checkToken(this.currentToken, TokenType.RBRACE)) {
-      this.throwError("Expected '}'");
     }
 
     return block;

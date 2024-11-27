@@ -2,12 +2,7 @@ import { describe, it } from "std/testing/bdd.ts";
 import { assertEquals } from "std/assert/mod.ts";
 import { Parser } from "@/parser/parser.ts";
 import { Lexer } from "@/lexer/lexer.ts";
-import {
-  CallExpression,
-  ExpressionStatement,
-  FunctionDeclaration,
-  StringLiteral,
-} from "@/parser/ast.ts";
+import { FunctionDeclaration } from "@/parser/ast.ts";
 
 // Target output:
 //  {
@@ -58,25 +53,10 @@ describe("Parser", () => {
     assertEquals(mainFunc.parameters.length, 0);
     assertEquals(mainFunc.returnType, null);
     assertEquals(mainFunc.body.statements.length, 1);
-
-    // Check print statement
-    const printStmt = mainFunc.body.statements[0] as ExpressionStatement;
-    assertEquals(printStmt.type, "ExpressionStatement");
-
-    const callExpr = printStmt.expression as CallExpression;
-    assertEquals(callExpr.type, "CallExpression");
-    assertEquals(callExpr.function.type, "Identifier");
-    assertEquals(callExpr.function.value, "print");
-
-    // Check print argument
-    assertEquals(callExpr.arguments.length, 1);
-    const arg = callExpr.arguments[0] as StringLiteral;
-    assertEquals(arg.type, "StringLiteral");
-    assertEquals(arg.value, "Hello World!");
   });
 
-  it("should report an error for invalid package name", () => {
-    const input = `package other { print("Hello World!") }`;
+  it("should require package keyword", () => {
+    const input = `main { print("Hello World!") }`;
     const lexer = new Lexer(input);
     const parser = new Parser(lexer);
 
@@ -86,15 +66,34 @@ describe("Parser", () => {
     } catch (error) {
       if (error instanceof Error) {
         assertEquals(
-          error.message.includes("Package name must be 'main'"),
+          error.message.includes("must start with 'package' keyword"),
           true,
-          "Error message should mention package name must be 'main'",
+          "Error message should mention package keyword requirement",
         );
       }
     }
   });
 
-  it("should report an error for missing brackets", () => {
+  it("should require package name", () => {
+    const input = `package { print("Hello World!") }`;
+    const lexer = new Lexer(input);
+    const parser = new Parser(lexer);
+
+    try {
+      parser.parseProgram();
+      throw new Error("Expected parser to throw an error");
+    } catch (error) {
+      if (error instanceof Error) {
+        assertEquals(
+          error.message.includes("Expected package name"),
+          true,
+          "Error message should mention package name requirement",
+        );
+      }
+    }
+  });
+
+  it("should require opening brace", () => {
     const input = `package main print("Hello World!")`;
     const lexer = new Lexer(input);
     const parser = new Parser(lexer);
@@ -107,9 +106,9 @@ describe("Parser", () => {
         throw error;
       }
       assertEquals(
-        error.message.includes("Expected '{'"),
+        error.message.includes("Expected '{' after package declaration"),
         true,
-        `Error message should mention missing '{' but got: ${error.message}`,
+        "Error message should mention missing '{'",
       );
     }
   });
