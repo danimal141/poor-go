@@ -1,4 +1,3 @@
-// src/semantic/analyzer.ts
 import {
   CallExpression,
   Expression,
@@ -127,29 +126,6 @@ export class SemanticAnalyzer {
     return funcType.returnType;
   }
 
-  // Entry point for analysis
-  public analyze(program: Program): void {
-    this.pushScope();
-
-    // Validate package
-    if (program.package !== "main") {
-      throw new SemanticError(`Package must be "main"`, program);
-    }
-
-    // Analyze declarations
-    for (const decl of program.declarations) {
-      if (decl.type !== "FunctionDeclaration") {
-        throw new SemanticError(
-          `Unsupported declaration type: ${decl.type}`,
-          decl,
-        );
-      }
-      this.analyzeFunctionDeclaration(decl as FunctionDeclaration);
-    }
-
-    this.popScope();
-  }
-
   // Analyze function declaration
   private analyzeFunctionDeclaration(func: FunctionDeclaration): void {
     this.pushScope();
@@ -183,5 +159,28 @@ export class SemanticAnalyzer {
     if (stmt.type === "ExpressionStatement") {
       this.inferType(stmt.expression);
     }
+  }
+
+  // Entry point for analysis
+  public analyze(program: Program): void {
+    this.pushScope();
+
+    // Validate package
+    if (program.package !== "main") {
+      throw new SemanticError(`Package must be "main"`, program);
+    }
+
+    // Analyze declarations
+    for (const decl of program.declarations) {
+      if (decl.type !== "FunctionDeclaration") {
+        throw new SemanticError(
+          `Unsupported declaration type: ${decl.type}`,
+          decl,
+        );
+      }
+      this.analyzeFunctionDeclaration(decl as FunctionDeclaration);
+    }
+
+    this.popScope();
   }
 }

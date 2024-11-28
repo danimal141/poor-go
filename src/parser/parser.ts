@@ -1,4 +1,3 @@
-// src/parser/parser.ts
 import { Lexer } from "@/lexer/lexer.ts";
 import { Token, TokenType } from "@/lexer/token.ts";
 import {
@@ -57,50 +56,6 @@ export class Parser {
       );
     }
     this.nextToken();
-  }
-
-  parseProgram(): Program {
-    // Parse package declaration
-    if (!this.checkToken(this.currentToken, TokenType.PACKAGE)) {
-      this.throwError("Program must start with 'package' keyword");
-    }
-    this.nextToken();
-
-    // Package name should be an identifier
-    if (!this.checkToken(this.currentToken, TokenType.IDENT)) {
-      this.throwError("Expected package name");
-    }
-    const packageName = this.currentToken.literal;
-    this.nextToken();
-
-    const program: Program = {
-      type: "Program",
-      package: packageName,
-      declarations: [],
-      location: this.currentLocation(),
-    };
-
-    // Parse function declarations or block
-    if (this.checkToken(this.currentToken, TokenType.FUNC)) {
-      // Explicit function declaration
-      const funcDecl = this.parseFunctionDeclaration();
-      program.declarations.push(funcDecl);
-    } else if (!this.checkToken(this.currentToken, TokenType.LBRACE)) {
-      this.throwError("Expected '{' after package declaration");
-    } else {
-      // Implicit main function
-      const mainFunction: FunctionDeclaration = {
-        type: "FunctionDeclaration",
-        name: "main",
-        parameters: [],
-        returnType: null,
-        body: this.parseBlock(),
-        location: this.currentLocation(),
-      };
-      program.declarations.push(mainFunction);
-    }
-
-    return program;
   }
 
   private parseFunctionDeclaration(): FunctionDeclaration {
@@ -336,5 +291,49 @@ export class Parser {
       value: this.currentToken.literal,
       location: this.currentLocation(),
     };
+  }
+
+  public parseProgram(): Program {
+    // Parse package declaration
+    if (!this.checkToken(this.currentToken, TokenType.PACKAGE)) {
+      this.throwError("Program must start with 'package' keyword");
+    }
+    this.nextToken();
+
+    // Package name should be an identifier
+    if (!this.checkToken(this.currentToken, TokenType.IDENT)) {
+      this.throwError("Expected package name");
+    }
+    const packageName = this.currentToken.literal;
+    this.nextToken();
+
+    const program: Program = {
+      type: "Program",
+      package: packageName,
+      declarations: [],
+      location: this.currentLocation(),
+    };
+
+    // Parse function declarations or block
+    if (this.checkToken(this.currentToken, TokenType.FUNC)) {
+      // Explicit function declaration
+      const funcDecl = this.parseFunctionDeclaration();
+      program.declarations.push(funcDecl);
+    } else if (!this.checkToken(this.currentToken, TokenType.LBRACE)) {
+      this.throwError("Expected '{' after package declaration");
+    } else {
+      // Implicit main function
+      const mainFunction: FunctionDeclaration = {
+        type: "FunctionDeclaration",
+        name: "main",
+        parameters: [],
+        returnType: null,
+        body: this.parseBlock(),
+        location: this.currentLocation(),
+      };
+      program.declarations.push(mainFunction);
+    }
+
+    return program;
   }
 }

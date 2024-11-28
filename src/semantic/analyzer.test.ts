@@ -1,4 +1,3 @@
-// src/semantic/analyzer.test.ts
 import { describe, it } from "std/testing/bdd.ts";
 import { assertThrows } from "std/assert/mod.ts";
 import { Parser } from "@/parser/parser.ts";
