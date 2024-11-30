@@ -18,27 +18,37 @@ export class LLVMGenerator {
     this.emitModuleHeader();
   }
 
+  /**
+   * Emits the LLVM module header including necessary declarations
+   * and global string format constant
+   */
   private emitModuleHeader(): void {
     this.output.push("declare i32 @printf(i8* nocapture readonly, ...)\n");
-    this.emitStringHelpers();
-  }
-
-  private emitStringHelpers(): void {
     this.output.push(
-      `@.str = private unnamed_addr constant [2 x i8] c"%s\\00", align 1\n`,
+      `@.str.fmt = private unnamed_addr constant [3 x i8] c"%s\\00", align 1\n`,
     );
   }
 
+  /**
+   * Generates the next unique variable name
+   * Returns: A string in the format %n where n is an incrementing number
+   */
   private nextVar(): string {
-    return `%${this.varCounter++}`;
+    return `%${++this.varCounter}`;
   }
 
+  /**
+   * Generates the next unique string constant identifier
+   * Returns: A string in the format @.str.n where n is an incrementing number
+   */
   private nextStringConst(): string {
     return `@.str.${this.stringCounter++}`;
   }
 
   /**
-   * Convert string literal to LLVM IR escaped string
+   * Processes a string literal to handle escape sequences and returns the LLVM IR representation
+   * @param str The input string to process
+   * Returns: An object containing the processed string and its length
    */
   private processStringLiteral(
     str: string,
@@ -53,32 +63,30 @@ export class LLVMGenerator {
         const nextChar = str[++i];
         switch (nextChar) {
           case "n":
-            processed += "\\0A";
+            processed += "\\0A"; // Newline
             length++;
             break;
           case "r":
-            processed += "\\0D";
+            processed += "\\0D"; // Carriage return
             length++;
             break;
           case "t":
-            processed += "\\09";
+            processed += "\\09"; // Tab
             length++;
             break;
           case '"':
-            processed += '\\"';
+            processed += '\\"'; // Quote
             length++;
             break;
           case "\\":
-            processed += "\\\\";
+            processed += "\\\\"; // Backslash
             length++;
             break;
           default:
-            // Unrecognized escape sequence, treat as literal characters
             processed += "\\" + nextChar;
             length += 2;
         }
       } else {
-        // Regular character
         processed += char;
         length++;
       }
@@ -88,13 +96,15 @@ export class LLVMGenerator {
   }
 
   /**
-   * Emit string literal as global constant
+   * Emits a string literal as a global constant
+   * @param value The string value to emit
+   * Returns: The identifier for the emitted string constant
    */
   private emitStringLiteral(value: string): string {
     const { processed, length } = this.processStringLiteral(value);
     const globalId = this.nextStringConst();
 
-    // +1 for null terminator
+    // Add null terminator to the length
     this.output.push(
       `${globalId} = private unnamed_addr constant [${
         length + 1
@@ -104,6 +114,10 @@ export class LLVMGenerator {
     return globalId;
   }
 
+  /**
+   * Emits the main function with the given statements
+   * @param statements Array of LLVM IR statements to include in the main function
+   */
   private emitMainFunction(statements: string[]): void {
     this.output.push("define i32 @main() {\n");
     this.output.push("entry:\n");
@@ -112,13 +126,18 @@ export class LLVMGenerator {
     this.output.push("}\n");
   }
 
+  /**
+   * Generates LLVM IR for a print statement
+   * @param value The string constant identifier to print
+   * Returns: Array of LLVM IR instructions for the print operation
+   */
   private emitPrint(value: string): string[] {
-    const strPtr = this.nextVar();
-    const fmtPtr = this.nextVar();
-    const callResult = this.nextVar();
+    const fmtPtr = this.nextVar(); // Will be %1
+    const strPtr = this.nextVar(); // Will be %2
+    const callResult = this.nextVar(); // Will be %3
 
     return [
-      `${fmtPtr} = getelementptr [2 x i8], [2 x i8]* @.str, i64 0, i64 0`,
+      `${fmtPtr} = getelementptr [3 x i8], [3 x i8]* @.str.fmt, i64 0, i64 0`,
       `${strPtr} = getelementptr [${value.length + 1} x i8], [${
         value.length + 1
       } x i8]* ${value}, i64 0, i64 0`,
@@ -126,6 +145,11 @@ export class LLVMGenerator {
     ];
   }
 
+  /**
+   * Main entry point: generates LLVM IR for the entire program
+   * @param ast The AST representing the program
+   * Returns: Complete LLVM IR as a string
+   */
   public generate(ast: Program): string {
     const statements: string[] = [];
 

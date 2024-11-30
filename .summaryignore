@@ -1,9 +1,6 @@
-bin
 .vscode
 deno.lock
-Dockerfile
-docker-compose.yml
-README.ja.md
+**/*/*.ja.md
 
 node_modules
 dist

@@ -431,4 +431,49 @@ func main() {
       );
     });
   });
+
+  describe("print statement", () => {
+    it("should tokenize print with string literal", () => {
+      const input = `package main { print("hello\\n") }`;
+      const lexer = new Lexer(input);
+      const tokens = lexer.scan();
+
+      // Show all tokens for debugging
+      console.log(
+        "Tokens:",
+        tokens.map((t) => ({
+          type: t.type,
+          literal: t.literal,
+          line: t.line,
+          column: t.column,
+        })),
+      );
+
+      const expectedTypes = [
+        TokenType.PACKAGE,
+        TokenType.IDENT, // "main"
+        TokenType.LBRACE, // "{"
+        TokenType.IDENT, // "print"
+        TokenType.LPAREN, // "("
+        TokenType.STRING, // "hello\n"
+        TokenType.RPAREN, // ")"
+        TokenType.RBRACE, // "}"
+        TokenType.EOF,
+      ];
+
+      assertEquals(
+        tokens.map((t) => t.type),
+        expectedTypes,
+        "Token types don't match expected sequence",
+      );
+
+      // Verify the string literal token safely
+      const stringToken = tokens.find((t) => t.type === TokenType.STRING);
+      if (!stringToken) {
+        throw new Error("String token not found in token stream");
+      }
+      assertEquals(stringToken.type, TokenType.STRING);
+      assertEquals(stringToken.literal, "hello\\n");
+    });
+  });
 });

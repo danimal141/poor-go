@@ -49,14 +49,14 @@ export class Parser {
     return token.type === type;
   }
 
-  private expectPeek(type: TokenType): void {
-    if (!this.checkToken(this.peekToken, type)) {
-      this.throwError(
-        `Expected next token to be '${type}', got '${this.peekToken.type}' instead`,
-      );
-    }
-    this.nextToken();
-  }
+  // private expectPeek(type: TokenType): void {
+  //   if (!this.checkToken(this.peekToken, type)) {
+  //     this.throwError(
+  //       `Expected next token to be '${type}', got '${this.peekToken.type}' instead`,
+  //     );
+  //   }
+  //   this.nextToken();
+  // }
 
   private parseFunctionDeclaration(): FunctionDeclaration {
     const location = this.currentLocation();
@@ -241,12 +241,14 @@ export class Parser {
       location: this.currentLocation(),
     };
 
-    this.nextToken();
+    this.nextToken(); // consume function name
+
     if (!this.checkToken(this.currentToken, TokenType.LPAREN)) {
       this.throwError("Expected '(' after function name");
     }
 
-    this.nextToken();
+    this.nextToken(); // consume '('
+
     const args = this.parseCallArguments();
 
     return {
@@ -261,37 +263,64 @@ export class Parser {
     const args: Expression[] = [];
 
     if (this.checkToken(this.currentToken, TokenType.RPAREN)) {
+      this.nextToken(); // consume ')'
       return args;
     }
 
     if (this.checkToken(this.currentToken, TokenType.STRING)) {
-      args.push(this.parseCallArgument());
+      const strLit: StringLiteral = {
+        type: "StringLiteral",
+        value: this.currentToken.literal,
+        location: this.currentLocation(),
+      };
+      args.push(strLit);
 
-      while (this.checkToken(this.peekToken, TokenType.COMMA)) {
-        this.nextToken();
-        this.nextToken();
-        args.push(this.parseCallArgument());
-      }
+      this.nextToken(); // consume string literal
+    } else {
+      this.throwError(`Unexpected argument token ${this.currentToken.type}`);
     }
 
-    this.expectPeek(TokenType.RPAREN);
+    if (!this.checkToken(this.currentToken, TokenType.RPAREN)) {
+      this.throwError(
+        `Expected ')' after argument, got ${this.currentToken.type}`,
+      );
+    }
+    this.nextToken(); // consume ')'
+
     return args;
   }
 
-  private parseCallArgument(): Expression {
-    if (this.checkToken(this.currentToken, TokenType.STRING)) {
-      return this.parseStringLiteral();
-    }
-    this.throwError(`Unexpected argument token ${this.currentToken.type}`);
-  }
+  // private logToken(prefix: string) {
+  //   console.log(`${prefix}: {
+  //     type: ${this.currentToken.type},
+  //     literal: "${this.currentToken.literal}",
+  //     line: ${this.currentToken.line},
+  //     column: ${this.currentToken.column}
+  //   }`);
+  // }
 
-  private parseStringLiteral(): StringLiteral {
-    return {
-      type: "StringLiteral",
-      value: this.currentToken.literal,
-      location: this.currentLocation(),
-    };
-  }
+  // private parseCallArgument(): Expression {
+  //   switch (this.currentToken.type) {
+  //     // deno-lint-ignore no-case-declarations
+  //     case TokenType.STRING:
+  //       const strLit: StringLiteral = {
+  //         type: "StringLiteral",
+  //         value: this.currentToken.literal,
+  //         location: this.currentLocation(),
+  //       };
+  //       return strLit;
+  //     default:
+  //       this.throwError(`Unexpected argument token ${this.currentToken.type}`);
+  //   }
+  // }
+
+  // private parseStringLiteral(): StringLiteral {
+  //   return {
+  //     type: "StringLiteral",
+  //     value: this.currentToken.literal,
+  //     location: this.currentLocation(),
+  //   };
+  // }
 
   public parseProgram(): Program {
     // Parse package declaration

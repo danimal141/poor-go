@@ -21,7 +21,7 @@ describe("LLVMGenerator", () => {
       // Verify required components are present
       const requiredParts = [
         "declare i32 @printf",
-        "@.str = private unnamed_addr constant [2 x i8]",
+        "@.str.fmt = private unnamed_addr constant [3 x i8]", // Updated format string size
         "define i32 @main()",
         "call i32 (i8*, ...) @printf",
         "ret i32 0",

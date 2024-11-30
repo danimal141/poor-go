@@ -156,16 +156,16 @@ error(message)    // エラーを生成
 ### 5.1 コンパイルコマンド
 ```bash
 # 基本的なコンパイル
-$ pogo source.sg
+$ pogo source.pg
 
 # 出力ファイル指定
-$ pogo -o program source.sg
+$ pogo -o program source.pg
 
 # LLVM IR出力
-$ pogo --emit-llvm source.sg
+$ pogo --emit-llvm source.pg
 
 # 最適化レベル指定
-$ pogo -O2 source.sg
+$ pogo -O2 source.pg
 ```
 
 ### 5.2 オプション
