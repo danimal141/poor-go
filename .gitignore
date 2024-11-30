@@ -14,5 +14,6 @@ dist/
 node_modules/
 tmp/
 *_project_summary.txt
+pogo
 
 !.tool-versions
