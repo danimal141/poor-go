@@ -1,3 +1,10 @@
+import {
+  CallExpression,
+  FunctionDeclaration,
+  Program,
+  StringLiteral,
+} from "@/parser/ast.ts";
+
 /**
  * LLVM IR Generator for PoorGo
  * Converts AST to LLVM IR string representation
@@ -119,18 +126,28 @@ export class LLVMGenerator {
     ];
   }
 
-  public generate(ast: any): string {
+  public generate(ast: Program): string {
     const statements: string[] = [];
 
-    if (
-      ast.declarations[0]?.body?.statements[0]?.expression?.type ===
-        "CallExpression"
-    ) {
-      const callExpr = ast.declarations[0].body.statements[0].expression;
-      if (callExpr.function.value === "print") {
-        const strValue = callExpr.arguments[0].value;
-        const strVar = this.emitStringLiteral(strValue);
-        statements.push(...this.emitPrint(strVar));
+    const firstDecl = ast.declarations[0];
+    if (firstDecl?.type === "FunctionDeclaration") {
+      const funcDecl = firstDecl as FunctionDeclaration;
+      const firstStmt = funcDecl.body.statements[0];
+      if (firstStmt?.type === "ExpressionStatement") {
+        const expr = firstStmt.expression;
+        if (expr.type === "CallExpression") {
+          const callExpr = expr as CallExpression;
+          if (
+            callExpr.function.value === "print" && callExpr.arguments.length > 0
+          ) {
+            const arg = callExpr.arguments[0];
+            if (arg && arg.type === "StringLiteral") {
+              const strLit = arg as StringLiteral;
+              const strVar = this.emitStringLiteral(strLit.value);
+              statements.push(...this.emitPrint(strVar));
+            }
+          }
+        }
       }
     }
 
