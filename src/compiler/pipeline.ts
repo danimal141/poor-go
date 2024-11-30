@@ -1,5 +1,3 @@
-import { join } from "std/path/mod.ts";
-
 interface CompileOptions {
   outputPath: string;
   emitLLVM: boolean;
@@ -15,7 +13,7 @@ export class CompilerPipeline {
       await llc.output();
       await clang.output();
       return true;
-    } catch (error) {
+    } catch (_error) {
       console.error("LLVM tools not found. Please install LLVM toolchain.");
       return false;
     }
