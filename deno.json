@@ -4,7 +4,7 @@
     "start": "deno run --allow-read --allow-write main.ts",
     "test": "deno test --allow-read",
     "test:watch": "deno test --watch --allow-read",
-    "compile": "deno compile --allow-read --allow-write --allow-run -o pogo main.ts && chmod +x pogo",
+    "compile": "deno compile --allow-read --allow-write --allow-run -o pgo main.ts && chmod +x pgo",
     "lint": "deno lint **/*.ts",
     "fmt": "deno fmt **/*.ts",
     "check": "deno check **/*.ts"
