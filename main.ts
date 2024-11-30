@@ -6,7 +6,7 @@ import { LLVMGenerator } from "@/codegen/generator.ts";
 import { CompilerPipeline } from "@/compiler/pipeline.ts";
 
 async function main() {
-  // Parse command line arguments using parseArgs
+  // Type-safe command line arguments handling
   const flags = parseArgs(Deno.args, {
     string: ["output", "o"],
     boolean: ["help", "emit-llvm", "verbose"],
@@ -31,13 +31,18 @@ async function main() {
   }
 
   try {
-    // Read input file
+    // Read input file with explicit error handling
+    let source: string;
     const sourceFile = flags._[0]?.toString();
     if (!sourceFile) {
       throw new Error("No input file specified");
     }
 
-    const source = await Deno.readTextFile(sourceFile);
+    try {
+      source = await Deno.readTextFile(sourceFile);
+    } catch (_error) {
+      throw new Error(`Failed to read source file: ${sourceFile}`);
+    }
 
     if (flags["verbose"]) {
       console.log(`Compiling ${sourceFile}...`);
@@ -60,7 +65,6 @@ async function main() {
 
     // Compile to executable
     const compiler = new CompilerPipeline();
-    // デフォルト値が設定されているので必ず string 型
     const outFile = flags["output"] || "a.out";
 
     const result = await compiler.compile(llvmIR, {
@@ -85,6 +89,10 @@ async function main() {
   }
 }
 
+// Explicitly check if this is the main module
 if (import.meta.main) {
-  main();
+  main().catch((error) => {
+    console.error("Fatal error:", error);
+    Deno.exit(1);
+  });
 }

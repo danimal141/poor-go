@@ -269,6 +269,11 @@ poor-go/
 
 ## 11. Tool Integration
 
+### Dependencies
+* deno v2 or later
+    * managed by asdf
+* llvm
+
 ### LLVM Tools
 ```bash
 # Generate LLVM bitcode

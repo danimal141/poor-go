@@ -235,8 +235,6 @@ export class Parser {
   }
 
   private parseCallExpression(): CallExpression {
-    this.logToken("parseCallExpression - start");
-
     const func: Identifier = {
       type: "Identifier",
       value: this.currentToken.literal,
@@ -244,17 +242,14 @@ export class Parser {
     };
 
     this.nextToken(); // consume function name
-    this.logToken("parseCallExpression - after function name");
 
     if (!this.checkToken(this.currentToken, TokenType.LPAREN)) {
       this.throwError("Expected '(' after function name");
     }
 
     this.nextToken(); // consume '('
-    this.logToken("parseCallExpression - after LPAREN");
 
     const args = this.parseCallArguments();
-    this.logToken("parseCallExpression - after arguments");
 
     return {
       type: "CallExpression",
@@ -266,17 +261,13 @@ export class Parser {
 
   private parseCallArguments(): Expression[] {
     const args: Expression[] = [];
-    this.logToken("parseCallArguments - start");
 
     if (this.checkToken(this.currentToken, TokenType.RPAREN)) {
-      this.logToken("parseCallArguments - found immediate RPAREN");
       this.nextToken(); // consume ')'
       return args;
     }
 
     if (this.checkToken(this.currentToken, TokenType.STRING)) {
-      this.logToken("parseCallArguments - found STRING");
-
       const strLit: StringLiteral = {
         type: "StringLiteral",
         value: this.currentToken.literal,
@@ -285,31 +276,28 @@ export class Parser {
       args.push(strLit);
 
       this.nextToken(); // consume string literal
-      this.logToken("parseCallArguments - after string literal");
     } else {
       this.throwError(`Unexpected argument token ${this.currentToken.type}`);
     }
 
     if (!this.checkToken(this.currentToken, TokenType.RPAREN)) {
-      this.logToken("parseCallArguments - missing RPAREN");
       this.throwError(
         `Expected ')' after argument, got ${this.currentToken.type}`,
       );
     }
     this.nextToken(); // consume ')'
-    this.logToken("parseCallArguments - end");
 
     return args;
   }
 
-  private logToken(prefix: string) {
-    console.log(`${prefix}: {
-      type: ${this.currentToken.type},
-      literal: "${this.currentToken.literal}",
-      line: ${this.currentToken.line},
-      column: ${this.currentToken.column}
-    }`);
-  }
+  // private logToken(prefix: string) {
+  //   console.log(`${prefix}: {
+  //     type: ${this.currentToken.type},
+  //     literal: "${this.currentToken.literal}",
+  //     line: ${this.currentToken.line},
+  //     column: ${this.currentToken.column}
+  //   }`);
+  // }
 
   // private parseCallArgument(): Expression {
   //   switch (this.currentToken.type) {
