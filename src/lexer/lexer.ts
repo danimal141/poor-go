@@ -131,17 +131,26 @@ export class Lexer {
     const position = this.position + 1; // Skip the opening quote
     this.readChar(); // Consume the opening quote
 
-    while (this.ch !== '"' && this.ch !== "" && this.ch !== "\n") {
+    while (
+      this.ch !== '"' &&
+      this.ch !== "" &&
+      this.ch !== "\n"
+    ) {
+      if (this.ch === "\\" && this.peekChar() === '"') {
+        this.readChar(); // consume backslash
+      }
       this.readChar();
     }
 
-    const str = this.input.slice(position, this.position);
-    if (this.ch === '"') {
-      this.readChar(); // Consume the closing quote
-      return str;
+    if (this.ch !== '"') {
+      throw new Error(
+        `Unterminated string literal at line ${this.line}, column ${this.column}`,
+      );
     }
 
-    return str; // String was not properly terminated
+    const str = this.input.slice(position, this.position);
+    this.readChar(); // Consume the closing quote
+    return str;
   }
 
   /**

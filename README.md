@@ -156,16 +156,16 @@ error(message)    // Create an error
 ### 5.1 Compilation Commands
 ```bash
 # Basic compilation
-$ pogo source.sg
+$ pogo source.pg
 
 # Specify output file
-$ pogo -o program source.sg
+$ pogo -o program source.pg
 
 # Output LLVM IR
-$ pogo --emit-llvm source.sg
+$ pogo --emit-llvm source.pg
 
 # Specify optimization level
-$ pogo -O2 source.sg
+$ pogo -O2 source.pg
 ```
 
 ### 5.2 Options
@@ -284,7 +284,7 @@ $ clang output.bc -o program
 ### Debug Support
 ```bash
 # Generate debug information
-$ pogo -g source.sg
+$ pogo -g source.pg
 
 # Use LLVM debugging tools
 $ lldb ./program
