@@ -98,6 +98,22 @@ deno task fmt
 deno task lint
 ```
 
+## Project Summary Generation
+The project includes a Python script to generate a comprehensive project summary, useful for documentation and sharing. This summary includes:
+
+* Directory structure
+* File contents
+* Important code sections
+* Tests and examples
+
+To generate the summary:
+
+```bash
+python generateprojectsummary.py
+```
+
+This will create a summary that can be easily shared with others or used for documentation purposes.
+
 ## Example
 
 Create a file `hello.pgo`:
