@@ -10,11 +10,10 @@
 
 # Project specific
 dist/
+bin/pgo
 *.log
 node_modules/
 tmp/
 *_project_summary.txt
-pgo
 *.out
-
 !.tool-versions

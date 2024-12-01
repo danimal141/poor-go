@@ -72,16 +72,16 @@ The compilation process has two stages:
 
 ```bash
 # Basic compilation
-./pgo build source.pgo
+bin/pgo build source.pgo
 
 # Specify output file
-./pgo build -o program source.pgo
+bin/pgo build -o program source.pgo
 
 # Show compilation process
-./pgo build --verbose source.pgo
+bin/pgo build --verbose source.pgo
 
 # Output LLVM IR
-./pgo build --emit-llvm source.pgo
+bin/pgo build --emit-llvm source.pgo
 ```
 
 ### Command-Line Options
@@ -147,7 +147,7 @@ package main {
 Compile and run:
 ```bash
 deno task compile # -> `pgo` command is created
-./pgo build hello.pgo
+bin/pgo build hello.pgo
 ./a.out  # Outputs: hello
 ```
 
