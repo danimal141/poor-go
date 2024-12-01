@@ -31,11 +31,11 @@ export interface Program extends Node {
 // ========================================
 
 /**
- * Represents top-level declarations
- * PoorGo only supports function and variable declarations
+ * Base interface for all declarations
  */
 export interface Declaration extends Node {
   type: "FunctionDeclaration" | "VariableDeclaration";
+  name: string; // Add common name property here
 }
 
 /**
@@ -44,10 +44,9 @@ export interface Declaration extends Node {
  */
 export interface FunctionDeclaration extends Declaration {
   type: "FunctionDeclaration";
-  name: string; // Function name
-  parameters: Parameter[]; // List of parameters
-  returnType: TypeNode | null; // Return type (null if no return value)
-  body: BlockStatement; // Function body
+  parameters: Parameter[];
+  returnType: TypeNode | null;
+  body: BlockStatement;
 }
 
 /**
@@ -55,11 +54,10 @@ export interface FunctionDeclaration extends Declaration {
  * Example 1: var x int = 5
  * Example 2: y := 10 (type inference)
  */
-export interface VariableDeclaration extends Node {
+export interface VariableDeclaration extends Declaration {
   type: "VariableDeclaration";
-  name: string; // Variable name
-  declType: TypeNode | null; // Variable type (null for type inference)
-  init: Expression; // Initial value
+  declType: TypeNode | null;
+  init: Expression;
 }
 
 /**

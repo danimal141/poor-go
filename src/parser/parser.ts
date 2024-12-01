@@ -13,25 +13,34 @@ import {
   Statement,
   StringLiteral,
   TypeNode,
-} from "@/parser/ast.ts";
+} from "./ast.ts";
 
 export class Parser {
-  private lexer: Lexer;
   private currentToken!: Token;
   private peekToken!: Token;
+  private lexer: Lexer;
 
   constructor(lexer: Lexer) {
     this.lexer = lexer;
-    // To fill in current / peer tokens
-    this.nextToken();
-    this.nextToken();
+    this.currentToken = this.lexer.nextToken();
+    this.peekToken = this.lexer.nextToken();
+    console.log("Initial current token:", this.currentToken);
+    console.log("Initial peek token:", this.peekToken);
   }
 
+  /**
+   * Advances the parser to the next token
+   */
   private nextToken(): void {
     this.currentToken = this.peekToken;
     this.peekToken = this.lexer.nextToken();
+    console.log("Advanced - current:", this.currentToken);
+    console.log("Advanced - peek:", this.peekToken);
   }
 
+  /**
+   * Returns current token's location for error reporting
+   */
   private currentLocation(): Location {
     return {
       line: this.currentToken.line,
@@ -39,302 +48,117 @@ export class Parser {
     };
   }
 
+  /**
+   * Throws a parser error with location information
+   */
   private throwError(message: string): never {
     throw new Error(
       `Parser error at line ${this.currentToken.line}, column ${this.currentToken.column}: ${message}`,
     );
   }
 
-  private checkToken(token: Token, type: TokenType): boolean {
-    return token.type === type;
+  /**
+   * Check if current token is of expected type and advance
+   */
+  private expectToken(type: TokenType): Token {
+    const token = this.currentToken;
+    if (token.type !== type) {
+      this.throwError(`Expected ${type}, got ${token.type}`);
+    }
+    this.nextToken();
+    return token;
   }
 
-  // private expectPeek(type: TokenType): void {
-  //   if (!this.checkToken(this.peekToken, type)) {
-  //     this.throwError(
-  //       `Expected next token to be '${type}', got '${this.peekToken.type}' instead`,
-  //     );
-  //   }
-  //   this.nextToken();
-  // }
+  /**
+   * Consume any semicolons
+   */
+  private consumeSemicolons(): void {
+    while (this.currentToken.type === TokenType.SEMICOLON) {
+      this.nextToken();
+    }
+  }
 
-  private parseFunctionDeclaration(): FunctionDeclaration {
+  /**
+   * Parse a type node
+   */
+  private parseType(): TypeNode {
     const location = this.currentLocation();
-    this.nextToken(); // consume 'func'
+    let typeType: "int" | "string" | "bool";
 
-    // Parse function name
-    if (!this.checkToken(this.currentToken, TokenType.IDENT)) {
-      this.throwError("Expected function name");
+    switch (this.currentToken.type) {
+      case TokenType.INT_TYPE:
+        typeType = "int";
+        break;
+      case TokenType.STRING_TYPE:
+        typeType = "string";
+        break;
+      case TokenType.BOOL_TYPE:
+        typeType = "bool";
+        break;
+      default:
+        this.throwError(`Expected type, got ${this.currentToken.type}`);
     }
-    const name = this.currentToken.literal;
+
     this.nextToken();
-
-    // Parse parameters
-    if (!this.checkToken(this.currentToken, TokenType.LPAREN)) {
-      this.throwError("Expected '(' after function name");
-    }
-    const parameters = this.parseFunctionParameters();
-
-    // Parse return type (optional)
-    const returnType = this.parseOptionalType();
-
-    // Parse function body
-    if (!this.checkToken(this.currentToken, TokenType.LBRACE)) {
-      this.throwError("Expected '{' after function declaration");
-    }
-
     return {
-      type: "FunctionDeclaration",
-      name,
-      parameters,
-      returnType,
-      body: this.parseBlock(),
+      type: "TypeNode",
+      typeType,
       location,
     };
   }
 
+  /**
+   * Parse function parameters
+   */
   private parseFunctionParameters(): Parameter[] {
     const parameters: Parameter[] = [];
 
-    this.nextToken(); // consume '('
-
-    while (!this.checkToken(this.currentToken, TokenType.RPAREN)) {
-      if (!this.checkToken(this.currentToken, TokenType.IDENT)) {
-        this.throwError("Expected parameter name");
-      }
-
-      const paramName = this.currentToken.literal;
-      const paramLocation = this.currentLocation();
-      this.nextToken();
-
-      // Parse parameter type
-      if (
-        !this.checkToken(this.currentToken, TokenType.INT_TYPE) &&
-        !this.checkToken(this.currentToken, TokenType.STRING_TYPE) &&
-        !this.checkToken(this.currentToken, TokenType.BOOL_TYPE)
-      ) {
-        this.throwError("Expected parameter type");
-      }
-
-      // Map token type to TypeNode typeType
-      const typeType = ((): "int" | "string" | "bool" => {
-        switch (this.currentToken.literal) {
-          case "int":
-            return "int";
-          case "string":
-            return "string";
-          case "bool":
-            return "bool";
-          default:
-            this.throwError("Invalid type");
-            return "int"; // unreachable
-        }
-      })();
-
-      parameters.push({
-        name: paramName,
-        type: {
-          type: "TypeNode",
-          typeType,
-          location: this.currentLocation(),
-        },
-        location: paramLocation,
-      });
-
-      this.nextToken();
-
-      if (this.checkToken(this.currentToken, TokenType.COMMA)) {
-        this.nextToken();
-      }
+    // No parameters case: ()
+    if (this.currentToken.type === TokenType.RPAREN) {
+      return parameters;
     }
 
-    this.nextToken(); // consume ')'
+    // Parse first parameter
+    let param = this.parseParameter();
+    parameters.push(param);
+
+    // Parse additional parameters: ', parameter'*
+    while (this.currentToken.type === TokenType.COMMA) {
+      this.nextToken(); // consume comma
+      param = this.parseParameter();
+      parameters.push(param);
+    }
+
     return parameters;
   }
 
-  private parseOptionalType(): TypeNode | null {
-    if (
-      this.checkToken(this.currentToken, TokenType.INT_TYPE) ||
-      this.checkToken(this.currentToken, TokenType.STRING_TYPE) ||
-      this.checkToken(this.currentToken, TokenType.BOOL_TYPE)
-    ) {
-      const typeType = ((): "int" | "string" | "bool" => {
-        switch (this.currentToken.literal) {
-          case "int":
-            return "int";
-          case "string":
-            return "string";
-          case "bool":
-            return "bool";
-          default:
-            this.throwError("Invalid type");
-            return "int"; // unreachable
-        }
-      })();
+  /**
+   * Parse a single parameter
+   */
+  private parseParameter(): Parameter {
+    const location = this.currentLocation();
 
-      const typeNode: TypeNode = {
-        type: "TypeNode",
-        typeType,
-        location: this.currentLocation(),
-      };
-      this.nextToken();
-      return typeNode;
-    }
-    return null;
-  }
+    // Parse parameter name
+    const name = this.expectToken(TokenType.IDENT).literal;
 
-  private parseBlock(): BlockStatement {
-    const block: BlockStatement = {
-      type: "BlockStatement",
-      statements: [],
-      location: this.currentLocation(),
-    };
-
-    this.nextToken(); // consume '{'
-
-    while (
-      !this.checkToken(this.currentToken, TokenType.RBRACE) &&
-      !this.checkToken(this.currentToken, TokenType.EOF)
-    ) {
-      const stmt = this.parseStatement();
-      if (stmt) {
-        block.statements.push(stmt);
-      }
-      this.nextToken();
-    }
-
-    return block;
-  }
-
-  private parseStatement(): Statement {
-    if (this.currentToken.literal === "print") {
-      return this.parseExpressionStatement();
-    }
-    this.throwError(`Unexpected token ${this.currentToken.type}`);
-  }
-
-  private parseExpressionStatement(): ExpressionStatement {
-    const stmt: ExpressionStatement = {
-      type: "ExpressionStatement",
-      expression: this.parseExpression(),
-      location: this.currentLocation(),
-    };
-
-    if (this.checkToken(this.peekToken, TokenType.SEMICOLON)) {
-      this.nextToken();
-    }
-
-    return stmt;
-  }
-
-  private parseExpression(): Expression {
-    if (this.currentToken.literal === "print") {
-      return this.parseCallExpression();
-    }
-    this.throwError(`Unexpected expression token ${this.currentToken.type}`);
-  }
-
-  private parseCallExpression(): CallExpression {
-    const func: Identifier = {
-      type: "Identifier",
-      value: this.currentToken.literal,
-      location: this.currentLocation(),
-    };
-
-    this.nextToken(); // consume function name
-
-    if (!this.checkToken(this.currentToken, TokenType.LPAREN)) {
-      this.throwError("Expected '(' after function name");
-    }
-
-    this.nextToken(); // consume '('
-
-    const args = this.parseCallArguments();
+    // Parse parameter type
+    const paramType = this.parseType();
 
     return {
-      type: "CallExpression",
-      function: func,
-      arguments: args,
-      location: this.currentLocation(),
+      name,
+      type: paramType,
+      location,
     };
   }
 
-  private parseCallArguments(): Expression[] {
-    const args: Expression[] = [];
-
-    if (this.checkToken(this.currentToken, TokenType.RPAREN)) {
-      this.nextToken(); // consume ')'
-      return args;
-    }
-
-    if (this.checkToken(this.currentToken, TokenType.STRING)) {
-      const strLit: StringLiteral = {
-        type: "StringLiteral",
-        value: this.currentToken.literal,
-        location: this.currentLocation(),
-      };
-      args.push(strLit);
-
-      this.nextToken(); // consume string literal
-    } else {
-      this.throwError(`Unexpected argument token ${this.currentToken.type}`);
-    }
-
-    if (!this.checkToken(this.currentToken, TokenType.RPAREN)) {
-      this.throwError(
-        `Expected ')' after argument, got ${this.currentToken.type}`,
-      );
-    }
-    this.nextToken(); // consume ')'
-
-    return args;
-  }
-
-  // private logToken(prefix: string) {
-  //   console.log(`${prefix}: {
-  //     type: ${this.currentToken.type},
-  //     literal: "${this.currentToken.literal}",
-  //     line: ${this.currentToken.line},
-  //     column: ${this.currentToken.column}
-  //   }`);
-  // }
-
-  // private parseCallArgument(): Expression {
-  //   switch (this.currentToken.type) {
-  //     // deno-lint-ignore no-case-declarations
-  //     case TokenType.STRING:
-  //       const strLit: StringLiteral = {
-  //         type: "StringLiteral",
-  //         value: this.currentToken.literal,
-  //         location: this.currentLocation(),
-  //       };
-  //       return strLit;
-  //     default:
-  //       this.throwError(`Unexpected argument token ${this.currentToken.type}`);
-  //   }
-  // }
-
-  // private parseStringLiteral(): StringLiteral {
-  //   return {
-  //     type: "StringLiteral",
-  //     value: this.currentToken.literal,
-  //     location: this.currentLocation(),
-  //   };
-  // }
-
+  /**
+   * Main entry point for parsing a program
+   */
   public parseProgram(): Program {
     // Parse package declaration
-    if (!this.checkToken(this.currentToken, TokenType.PACKAGE)) {
-      this.throwError("Program must start with 'package' keyword");
-    }
-    this.nextToken();
-
-    // Package name should be an identifier
-    if (!this.checkToken(this.currentToken, TokenType.IDENT)) {
-      this.throwError("Expected package name");
-    }
-    const packageName = this.currentToken.literal;
-    this.nextToken();
+    this.expectToken(TokenType.PACKAGE);
+    const packageName = this.expectToken(TokenType.IDENT).literal;
+    this.consumeSemicolons();
 
     const program: Program = {
       type: "Program",
@@ -343,26 +167,145 @@ export class Parser {
       location: this.currentLocation(),
     };
 
-    // Parse function declarations or block
-    if (this.checkToken(this.currentToken, TokenType.FUNC)) {
-      // Explicit function declaration
-      const funcDecl = this.parseFunctionDeclaration();
-      program.declarations.push(funcDecl);
-    } else if (!this.checkToken(this.currentToken, TokenType.LBRACE)) {
-      this.throwError("Expected '{' after package declaration");
-    } else {
-      // Implicit main function
-      const mainFunction: FunctionDeclaration = {
-        type: "FunctionDeclaration",
-        name: "main",
-        parameters: [],
-        returnType: null,
-        body: this.parseBlock(),
-        location: this.currentLocation(),
-      };
-      program.declarations.push(mainFunction);
+    // Parse declarations
+    while (this.currentToken.type !== TokenType.EOF) {
+      if (this.currentToken.type === TokenType.FUNC) {
+        const decl = this.parseFunctionDeclaration();
+        program.declarations.push(decl);
+      }
+      this.consumeSemicolons();
     }
 
     return program;
+  }
+
+  /**
+   * Parse a function declaration
+   */
+  private parseFunctionDeclaration(): FunctionDeclaration {
+    const location = this.currentLocation();
+    this.nextToken(); // consume 'func'
+
+    const name = this.expectToken(TokenType.IDENT).literal;
+
+    this.expectToken(TokenType.LPAREN);
+    const parameters = this.parseFunctionParameters();
+    this.expectToken(TokenType.RPAREN);
+
+    let returnType: TypeNode | null = null;
+    if (
+      this.currentToken.type === TokenType.INT_TYPE ||
+      this.currentToken.type === TokenType.STRING_TYPE ||
+      this.currentToken.type === TokenType.BOOL_TYPE
+    ) {
+      returnType = this.parseType();
+    }
+
+    this.expectToken(TokenType.LBRACE);
+    const body = this.parseBlockStatement();
+
+    return {
+      type: "FunctionDeclaration",
+      name,
+      parameters,
+      returnType,
+      body,
+      location,
+    };
+  }
+
+  /**
+   * Parse a block statement
+   */
+  private parseBlockStatement(): BlockStatement {
+    const statements: Statement[] = [];
+    const location = this.currentLocation();
+
+    while (
+      this.currentToken.type !== TokenType.RBRACE &&
+      this.currentToken.type !== TokenType.EOF
+    ) {
+      const stmt = this.parseStatement();
+      statements.push(stmt);
+      this.consumeSemicolons();
+    }
+
+    this.expectToken(TokenType.RBRACE);
+
+    return {
+      type: "BlockStatement",
+      statements,
+      location,
+    };
+  }
+
+  /**
+   * Parse a statement
+   */
+  private parseStatement(): Statement {
+    switch (this.currentToken.type) {
+      case TokenType.IDENT:
+        return this.parseExpressionStatement();
+      default:
+        this.throwError(`Unexpected token ${this.currentToken.type}`);
+    }
+  }
+
+  /**
+   * Parse an expression statement
+   */
+  private parseExpressionStatement(): ExpressionStatement {
+    const expression = this.parseExpression();
+
+    return {
+      type: "ExpressionStatement",
+      expression,
+      location: this.currentLocation(),
+    };
+  }
+
+  /**
+   * Parse an expression
+   */
+  private parseExpression(): Expression {
+    if (this.currentToken.literal === "print") {
+      return this.parseCallExpression();
+    }
+    this.throwError(`Unexpected expression token ${this.currentToken.type}`);
+  }
+
+  /**
+   * Parse a function call
+   */
+  private parseCallExpression(): CallExpression {
+    const func: Identifier = {
+      type: "Identifier",
+      value: this.currentToken.literal,
+      location: this.currentLocation(),
+    };
+
+    this.nextToken(); // consume function name
+    this.expectToken(TokenType.LPAREN);
+
+    const args: Expression[] = [];
+
+    if (this.currentToken.type === TokenType.STRING) {
+      const strLit: StringLiteral = {
+        type: "StringLiteral",
+        value: this.currentToken.literal,
+        location: this.currentLocation(),
+      };
+      args.push(strLit);
+      this.nextToken();
+    }
+
+    this.expectToken(TokenType.RPAREN);
+
+    return {
+      type: "CallExpression",
+      function: func,
+      arguments: args,
+      location: this.currentLocation(),
+    };
   }
 }
