@@ -1,8 +1,8 @@
 import {
   CallExpression,
+  Expression,
   FunctionDeclaration,
   Program,
-  StringLiteral,
 } from "@/parser/ast.ts";
 
 /**
@@ -127,28 +127,91 @@ export class LLVMGenerator {
   }
 
   /**
-   * Generates LLVM IR for a print statement
-   * @param value The string constant identifier to print
-   * Returns: Array of LLVM IR instructions for the print operation
+   * Generates LLVM IR for a numeric expression
    */
-  private emitPrint(value: string): string[] {
-    const fmtPtr = this.nextVar(); // Will be %1
-    const strPtr = this.nextVar(); // Will be %2
-    const callResult = this.nextVar(); // Will be %3
+  private emitIntegerExpression(expr: Expression): string {
+    switch (expr.type) {
+      case "IntegerLiteral":
+        return expr.value.toString();
+      case "InfixExpression": {
+        // Get the left and right operands
+        const left = this.emitIntegerExpression(expr.left);
+        const right = this.emitIntegerExpression(expr.right);
+        const result = this.nextVar();
 
-    return [
-      `${fmtPtr} = getelementptr [3 x i8], [3 x i8]* @.str.fmt, i64 0, i64 0`,
-      `${strPtr} = getelementptr [${value.length + 1} x i8], [${
-        value.length + 1
-      } x i8]* ${value}, i64 0, i64 0`,
-      `${callResult} = call i32 (i8*, ...) @printf(i8* ${fmtPtr}, i8* ${strPtr})`,
-    ];
+        switch (expr.operator) {
+          case "+":
+            // Specify type for LLVM add instruction
+            this.output.push(`  ${result} = add i32 ${left}, ${right}`);
+            return result;
+          default:
+            throw new Error(`Unsupported operator: ${expr.operator}`);
+        }
+      }
+      default:
+        throw new Error(`Unsupported expression type: ${expr.type}`);
+    }
+  }
+
+  /**
+   * Emits string literal as a global constant and returns LLVM IR instructions
+   */
+  // private emitPrintString(strVar: string): string[] {
+  //   const fmtPtr = this.nextVar();
+  //   const strPtr = this.nextVar();
+  //   const callResult = this.nextVar();
+
+  //   return [
+  //     `${fmtPtr} = getelementptr [3 x i8], [3 x i8]* @.str.fmt, i64 0, i64 0`,
+  //     `${strPtr} = getelementptr [${strVar.length + 1} x i8], [${
+  //       strVar.length + 1
+  //     } x i8]* ${strVar}, i64 0, i64 0`,
+  //     `${callResult} = call i32 (i8*, ...) @printf(i8* ${fmtPtr}, i8* ${strPtr})`,
+  //   ];
+  // }
+
+  /**
+   * Generates LLVM IR for a print statement
+   */
+  private emitPrint(expr: Expression): string[] {
+    if (expr.type === "StringLiteral") {
+      const strVar = this.emitStringLiteral(expr.value);
+      const fmtPtr = this.nextVar();
+      const strPtr = this.nextVar();
+      const callResult = this.nextVar();
+
+      return [
+        `${fmtPtr} = getelementptr [3 x i8], [3 x i8]* @.str.fmt, i64 0, i64 0`,
+        `${strPtr} = getelementptr [${expr.value.length + 1} x i8], [${
+          expr.value.length + 1
+        } x i8]* ${strVar}, i64 0, i64 0`,
+        `${callResult} = call i32 (i8*, ...) @printf(i8* ${fmtPtr}, i8* ${strPtr})`,
+      ];
+    } else {
+      // For integer printing
+      const intResult = this.emitIntegerExpression(expr);
+      const callResult = this.nextVar();
+
+      // Add integer format string
+      const intFmt = "@.str.int.fmt";
+      if (
+        !this.output.includes(
+          `${intFmt} = private unnamed_addr constant [4 x i8] c"%d\\0A\\00", align 1`,
+        )
+      ) {
+        this.output.unshift(
+          `${intFmt} = private unnamed_addr constant [4 x i8] c"%d\\0A\\00", align 1`,
+        );
+      }
+
+      return [
+        `${callResult} = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* ${intFmt}, i64 0, i64 0), i32 ${intResult})`,
+      ];
+    }
   }
 
   /**
    * Main entry point: generates LLVM IR for the entire program
-   * @param ast The AST representing the program
-   * Returns: Complete LLVM IR as a string
    */
   public generate(ast: Program): string {
     const statements: string[] = [];
@@ -165,10 +228,8 @@ export class LLVMGenerator {
             callExpr.function.value === "print" && callExpr.arguments.length > 0
           ) {
             const arg = callExpr.arguments[0];
-            if (arg && arg.type === "StringLiteral") {
-              const strLit = arg as StringLiteral;
-              const strVar = this.emitStringLiteral(strLit.value);
-              statements.push(...this.emitPrint(strVar));
+            if (arg) { // Add null check
+              statements.push(...this.emitPrint(arg));
             }
           }
         }

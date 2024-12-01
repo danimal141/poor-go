@@ -82,4 +82,29 @@ func main(x int) {
       );
     });
   });
+
+  it("should accept valid integer expression in print", () => {
+    const input = `package main
+func main() {
+  print(4 + 3)
+}`;
+    const ast = parse(input);
+    const analyzer = new SemanticAnalyzer();
+    analyzer.analyze(ast); // Should not throw
+  });
+
+  it("should reject invalid arithmetic expressions", () => {
+    const input = `package main
+func main() {
+  print("hello" + 3)
+}`;
+    const ast = parse(input);
+    const analyzer = new SemanticAnalyzer();
+
+    assertThrows(
+      () => analyzer.analyze(ast),
+      SemanticError,
+      "Cannot perform arithmetic on non-numeric types",
+    );
+  });
 });

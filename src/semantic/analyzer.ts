@@ -2,6 +2,7 @@ import {
   CallExpression,
   Expression,
   FunctionDeclaration,
+  InfixExpression,
   Node,
   Program,
   Statement,
@@ -15,14 +16,6 @@ interface FunctionType {
   parameters: Type[];
   returnType: Type;
 }
-
-// Type definitions for built-in functions
-const builtinFunctions: Record<string, FunctionType> = {
-  print: {
-    parameters: ["string"],
-    returnType: "void",
-  },
-} as const;
 
 // Custom error class for semantic analysis errors
 export class SemanticError extends Error {
@@ -76,8 +69,9 @@ export class SemanticAnalyzer {
         return this.resolve(expr.value);
       case "CallExpression":
         return this.checkCallExpression(expr);
-      case "PrefixExpression":
       case "InfixExpression":
+        return this.checkInfixExpression(expr);
+      default:
         throw new SemanticError(
           `Expression type not yet supported: ${expr.type}`,
           expr,
@@ -85,42 +79,75 @@ export class SemanticAnalyzer {
     }
   }
 
-  // Type check function calls
+  /**
+   * Check infix expression types (e.g., a + b)
+   */
+  private checkInfixExpression(expr: InfixExpression): Type {
+    const leftType = this.inferType(expr.left);
+    const rightType = this.inferType(expr.right);
+
+    switch (expr.operator) {
+      case "+": {
+        // Check numeric types first
+        if (leftType !== "int" || rightType !== "int") {
+          throw new SemanticError(
+            "Cannot perform arithmetic on non-numeric types",
+            expr,
+          );
+        }
+        return "int";
+      }
+      default:
+        throw new SemanticError(
+          `Operator not yet supported: ${expr.operator}`,
+          expr,
+        );
+    }
+  }
+
+  // Type definitions for built-in functions
+  private readonly builtinFunctions: Record<string, FunctionType> = {
+    print: {
+      parameters: ["string" as Type, "int" as Type], // Allow both string and int
+      returnType: "void" as Type,
+    },
+  };
+
+  /**
+   * Type check function calls
+   */
   private checkCallExpression(expr: CallExpression): Type {
     const funcName = expr.function.value;
-    const funcType = builtinFunctions[funcName];
+    const funcType = this.builtinFunctions[funcName];
 
     if (!funcType) {
       throw new SemanticError(`Undefined function: ${funcName}`, expr);
     }
 
     // Check argument count
-    if (expr.arguments.length !== funcType.parameters.length) {
+    if (expr.arguments.length !== 1) {
       throw new SemanticError(
-        `Function ${funcName} expects ${funcType.parameters.length} arguments, but got ${expr.arguments.length}`,
+        `Function ${funcName} expects 1 argument, but got ${expr.arguments.length}`,
         expr,
       );
     }
 
-    // Check argument types
-    for (let i = 0; i < expr.arguments.length; i++) {
-      const arg = expr.arguments[i];
-      if (!arg) {
-        throw new SemanticError(
-          `Missing argument ${i + 1} for function ${funcName}`,
-          expr,
-        );
-      }
-      const argType = this.inferType(arg);
-      const expectedType = funcType.parameters[i];
-      if (argType !== expectedType) {
-        throw new SemanticError(
-          `Argument ${
-            i + 1
-          } of function ${funcName} expects type ${expectedType}, but got ${argType}`,
-          arg,
-        );
-      }
+    // Check argument exists and get its type
+    const arg = expr.arguments[0];
+    if (!arg) {
+      throw new SemanticError(
+        `Function ${funcName} expects 1 argument, but none was provided`,
+        expr,
+      );
+    }
+
+    // Check argument type
+    const argType = this.inferType(arg);
+    if (!funcType.parameters.includes(argType)) {
+      throw new SemanticError(
+        `Cannot print value of type ${argType}`,
+        arg,
+      );
     }
 
     return funcType.returnType;

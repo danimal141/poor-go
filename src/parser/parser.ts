@@ -265,38 +265,27 @@ export class Parser {
   }
 
   /**
-   * Parse an expression
-   */
-  private parseExpression(): Expression {
-    if (this.currentToken.literal === "print") {
-      return this.parseCallExpression();
-    }
-    this.throwError(`Unexpected expression token ${this.currentToken.type}`);
-  }
-
-  /**
    * Parse a function call
    */
   private parseCallExpression(): CallExpression {
+    const location = this.currentLocation();
     const func: Identifier = {
       type: "Identifier",
       value: this.currentToken.literal,
-      location: this.currentLocation(),
+      location,
     };
 
     this.nextToken(); // consume function name
     this.expectToken(TokenType.LPAREN);
 
     const args: Expression[] = [];
+    if (this.currentToken.type !== TokenType.RPAREN) {
+      args.push(this.parseAdditive()); // Changed from parseExpression to parseAdditive
 
-    if (this.currentToken.type === TokenType.STRING) {
-      const strLit: StringLiteral = {
-        type: "StringLiteral",
-        value: this.currentToken.literal,
-        location: this.currentLocation(),
-      };
-      args.push(strLit);
-      this.nextToken();
+      while (this.currentToken.type === TokenType.COMMA) {
+        this.nextToken();
+        args.push(this.parseAdditive());
+      }
     }
 
     this.expectToken(TokenType.RPAREN);
@@ -305,7 +294,82 @@ export class Parser {
       type: "CallExpression",
       function: func,
       arguments: args,
-      location: this.currentLocation(),
+      location,
     };
+  }
+
+  /**
+   * Parse an expression
+   */
+  private parseExpression(): Expression {
+    if (this.currentToken.literal === "print") {
+      return this.parseCallExpression();
+    }
+    return this.parseAdditive();
+  }
+
+  /**
+   * Parse additive expression (e.g. a + b)
+   */
+  private parseAdditive(): Expression {
+    let left = this.parsePrimary();
+
+    while (this.currentToken.type === TokenType.PLUS) {
+      const operator = this.currentToken.literal;
+      this.nextToken(); // consume operator
+      const right = this.parsePrimary();
+
+      left = {
+        type: "InfixExpression",
+        operator,
+        left,
+        right,
+        location: this.currentLocation(),
+      };
+    }
+
+    return left;
+  }
+
+  /**
+   * Parse primary expression (number, string, etc)
+   */
+  private parsePrimary(): Expression {
+    const location = this.currentLocation();
+
+    switch (this.currentToken.type) {
+      case TokenType.INT: {
+        const value = parseInt(this.currentToken.literal, 10);
+        this.nextToken();
+        return {
+          type: "IntegerLiteral",
+          value,
+          location,
+        };
+      }
+      case TokenType.STRING: {
+        const strLit: StringLiteral = {
+          type: "StringLiteral",
+          value: this.currentToken.literal,
+          location,
+        };
+        this.nextToken();
+        return strLit;
+      }
+      case TokenType.IDENT: {
+        if (this.currentToken.literal === "print") {
+          return this.parseCallExpression();
+        }
+        const ident: Identifier = {
+          type: "Identifier",
+          value: this.currentToken.literal,
+          location,
+        };
+        this.nextToken();
+        return ident;
+      }
+      default:
+        this.throwError(`Unexpected token ${this.currentToken.type}`);
+    }
   }
 }

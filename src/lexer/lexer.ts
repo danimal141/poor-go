@@ -118,6 +118,17 @@ export class Lexer {
   }
 
   /**
+   * Reads a number from the input
+   */
+  private readNumber(): string {
+    const position = this.position;
+    while (this.isDigit(this.ch)) {
+      this.readChar();
+    }
+    return this.input.slice(position, this.position);
+  }
+
+  /**
    * Creates a token with the current position information
    */
   private createToken(type: TokenType, literal: string): Token {
@@ -177,8 +188,16 @@ export class Lexer {
         this.readChar();
         break;
 
+      case "+":
+        token = this.createToken(TokenType.PLUS, "+");
+        this.readChar();
+        break;
+
       default:
-        if (this.isLetter(this.ch)) {
+        if (this.isDigit(this.ch)) {
+          const literal = this.readNumber();
+          token = this.createToken(TokenType.INT, literal);
+        } else if (this.isLetter(this.ch)) {
           const literal = this.readIdentifier();
           token = this.createToken(lookupIdent(literal), literal);
         } else {
@@ -197,6 +216,13 @@ export class Lexer {
    */
   private isLetter(ch: string): boolean {
     return /[a-zA-Z_]/.test(ch);
+  }
+
+  /**
+   * Checks if a character is a digit
+   */
+  private isDigit(ch: string): boolean {
+    return /[0-9]/.test(ch);
   }
 
   /**

@@ -88,5 +88,48 @@ func main() {
         );
       });
     });
+
+    it("should correctly tokenize integer expression", () => {
+      const input = `package main
+    func main() {
+      print(4 + 3)
+    }`;
+
+      const expectedTokens = [
+        { type: TokenType.PACKAGE, literal: "package" },
+        { type: TokenType.IDENT, literal: "main" },
+        { type: TokenType.SEMICOLON, literal: ";" },
+        { type: TokenType.FUNC, literal: "func" },
+        { type: TokenType.IDENT, literal: "main" },
+        { type: TokenType.LPAREN, literal: "(" },
+        { type: TokenType.RPAREN, literal: ")" },
+        { type: TokenType.LBRACE, literal: "{" },
+        { type: TokenType.IDENT, literal: "print" },
+        { type: TokenType.LPAREN, literal: "(" },
+        { type: TokenType.INT, literal: "4" },
+        { type: TokenType.PLUS, literal: "+" },
+        { type: TokenType.INT, literal: "3" },
+        { type: TokenType.RPAREN, literal: ")" },
+        { type: TokenType.SEMICOLON, literal: ";" },
+        { type: TokenType.RBRACE, literal: "}" },
+        { type: TokenType.SEMICOLON, literal: ";" },
+        { type: TokenType.EOF, literal: "" },
+      ];
+
+      const lexer = new Lexer(input);
+      const tokens = [];
+      let token;
+
+      do {
+        token = lexer.nextToken();
+        tokens.push(token);
+      } while (token.type !== TokenType.EOF);
+
+      assertEquals(tokens.length, expectedTokens.length);
+      tokens.forEach((token, i) => {
+        assertEquals(token.type, expectedTokens[i]?.type);
+        assertEquals(token.literal, expectedTokens[i]?.literal);
+      });
+    });
   });
 });
