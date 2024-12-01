@@ -63,20 +63,38 @@ dnf install llvm clang
 
 ## Usage
 
-### Compile and Run
+### Compiling PoorGo Programs
+
+The compilation process has two stages:
+
+1. Use `pgo build` to compile your PoorGo source files
+2. The compiler generates an executable file
 
 ```bash
-# Compile a source file
-deno task start input.pgo
+# Basic compilation
+./pgo build source.pgo
 
 # Specify output file
-deno task start -o output input.pgo
+./pgo build -o program source.pgo
 
 # Show compilation process
-deno task start --verbose input.pgo
+./pgo build --verbose source.pgo
 
 # Output LLVM IR
-deno task start --emit-llvm input.pgo
+./pgo build --emit-llvm source.pgo
+```
+
+### Command-Line Options
+
+```
+Usage: pgo build [options] <source-file>
+
+Options:
+  -o, --output <file>  Output file name (default: a.out)
+  --emit-llvm          Output LLVM IR
+  --verbose            Show compilation process
+  -O<level>           Optimization level (0-3)
+  -h, --help          Show this help message
 ```
 
 ### Development
@@ -96,6 +114,9 @@ deno task fmt
 
 # Lint code
 deno task lint
+
+# Generate project summary
+python generateprojectsummary.py
 ```
 
 ## Project Summary Generation
@@ -125,7 +146,8 @@ package main {
 
 Compile and run:
 ```bash
-deno task start hello.pgo
+deno task compile # -> `pgo` command is created
+./pgo build hello.pgo
 ./a.out  # Outputs: hello
 ```
 
