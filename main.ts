@@ -78,7 +78,7 @@ async function handleBuild(args: string[]): Promise<void> {
     let source: string;
     try {
       source = await Deno.readTextFile(sourceFile);
-    } catch (error) {
+    } catch (_error) {
       throw new Error(`Failed to read source file: ${sourceFile}`);
     }
 
@@ -125,16 +125,18 @@ async function handleBuild(args: string[]): Promise<void> {
 /**
  * Handles the help command
  */
-async function handleHelp(args: string[]): Promise<void> {
+function handleHelp(args: string[]): Promise<void> {
   const command = args[0];
   showHelp(command);
+  return Promise.resolve();
 }
 
 /**
  * Handles the version command
  */
-async function handleVersion(_args: string[]): Promise<void> {
+function handleVersion(_args: string[]): Promise<void> {
   console.log(`pgo version ${VERSION}`);
+  return Promise.resolve();
 }
 
 /**
