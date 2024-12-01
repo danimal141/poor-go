@@ -8,9 +8,11 @@ import {
   FunctionDeclaration,
   Identifier,
   Location,
+  Parameter,
   Program,
   Statement,
   StringLiteral,
+  TypeNode,
 } from "./ast.ts";
 
 export class Parser {
@@ -77,6 +79,79 @@ export class Parser {
   }
 
   /**
+   * Parse a type node
+   */
+  private parseType(): TypeNode {
+    const location = this.currentLocation();
+    let typeType: "int" | "string" | "bool";
+
+    switch (this.currentToken.type) {
+      case TokenType.INT_TYPE:
+        typeType = "int";
+        break;
+      case TokenType.STRING_TYPE:
+        typeType = "string";
+        break;
+      case TokenType.BOOL_TYPE:
+        typeType = "bool";
+        break;
+      default:
+        this.throwError(`Expected type, got ${this.currentToken.type}`);
+    }
+
+    this.nextToken();
+    return {
+      type: "TypeNode",
+      typeType,
+      location,
+    };
+  }
+
+  /**
+   * Parse function parameters
+   */
+  private parseFunctionParameters(): Parameter[] {
+    const parameters: Parameter[] = [];
+
+    // No parameters case: ()
+    if (this.currentToken.type === TokenType.RPAREN) {
+      return parameters;
+    }
+
+    // Parse first parameter
+    let param = this.parseParameter();
+    parameters.push(param);
+
+    // Parse additional parameters: ', parameter'*
+    while (this.currentToken.type === TokenType.COMMA) {
+      this.nextToken(); // consume comma
+      param = this.parseParameter();
+      parameters.push(param);
+    }
+
+    return parameters;
+  }
+
+  /**
+   * Parse a single parameter
+   */
+  private parseParameter(): Parameter {
+    const location = this.currentLocation();
+
+    // Parse parameter name
+    const name = this.expectToken(TokenType.IDENT).literal;
+
+    // Parse parameter type
+    const paramType = this.parseType();
+
+    return {
+      name,
+      type: paramType,
+      location,
+    };
+  }
+
+  /**
    * Main entry point for parsing a program
    */
   public parseProgram(): Program {
@@ -114,10 +189,17 @@ export class Parser {
     const name = this.expectToken(TokenType.IDENT).literal;
 
     this.expectToken(TokenType.LPAREN);
-    // TODO: Parse parameters when we add support for them
+    const parameters = this.parseFunctionParameters();
     this.expectToken(TokenType.RPAREN);
 
-    // TODO: Parse return type when we add support for it
+    let returnType: TypeNode | null = null;
+    if (
+      this.currentToken.type === TokenType.INT_TYPE ||
+      this.currentToken.type === TokenType.STRING_TYPE ||
+      this.currentToken.type === TokenType.BOOL_TYPE
+    ) {
+      returnType = this.parseType();
+    }
 
     this.expectToken(TokenType.LBRACE);
     const body = this.parseBlockStatement();
@@ -125,8 +207,8 @@ export class Parser {
     return {
       type: "FunctionDeclaration",
       name,
-      parameters: [],
-      returnType: null,
+      parameters,
+      returnType,
       body,
       location,
     };

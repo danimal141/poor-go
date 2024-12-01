@@ -15,13 +15,17 @@ describe("LLVMGenerator", () => {
 
   describe("print statement", () => {
     it("should generate correct IR for hello world", () => {
-      const input = `package main { print("hello") }`;
+      const input = `package main
+
+func main() {
+  print("hello")
+}`;
       const ir = generateIR(input);
 
       // Verify required components are present
       const requiredParts = [
         "declare i32 @printf",
-        "@.str.fmt = private unnamed_addr constant [3 x i8]", // Updated format string size
+        "@.str.fmt = private unnamed_addr constant [3 x i8]",
         "define i32 @main()",
         "call i32 (i8*, ...) @printf",
         "ret i32 0",
@@ -37,7 +41,11 @@ describe("LLVMGenerator", () => {
     });
 
     it("should handle string with special characters", () => {
-      const input = `package main { print("hello\\nworld") }`;
+      const input = `package main
+
+func main() {
+  print("hello\\nworld")
+}`;
       const ir = generateIR(input);
 
       // Debug output
