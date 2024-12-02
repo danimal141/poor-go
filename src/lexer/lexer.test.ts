@@ -89,11 +89,12 @@ func main() {
       });
     });
 
-    it("should correctly tokenize integer expression", () => {
+    it("should correctly tokenize complex arithmetic expression", () => {
       const input = `package main
-    func main() {
-      print(4 + 3)
-    }`;
+      func main() {
+        print(4 + 3 * 2)
+        print(10 - 6 / 2)
+      }`;
 
       const expectedTokens = [
         { type: TokenType.PACKAGE, literal: "package" },
@@ -109,6 +110,17 @@ func main() {
         { type: TokenType.INT, literal: "4" },
         { type: TokenType.PLUS, literal: "+" },
         { type: TokenType.INT, literal: "3" },
+        { type: TokenType.ASTERISK, literal: "*" },
+        { type: TokenType.INT, literal: "2" },
+        { type: TokenType.RPAREN, literal: ")" },
+        { type: TokenType.SEMICOLON, literal: ";" },
+        { type: TokenType.IDENT, literal: "print" },
+        { type: TokenType.LPAREN, literal: "(" },
+        { type: TokenType.INT, literal: "10" },
+        { type: TokenType.MINUS, literal: "-" },
+        { type: TokenType.INT, literal: "6" },
+        { type: TokenType.SLASH, literal: "/" },
+        { type: TokenType.INT, literal: "2" },
         { type: TokenType.RPAREN, literal: ")" },
         { type: TokenType.SEMICOLON, literal: ";" },
         { type: TokenType.RBRACE, literal: "}" },

@@ -193,6 +193,21 @@ export class Lexer {
         this.readChar();
         break;
 
+      case "-":
+        token = this.createToken(TokenType.MINUS, "-");
+        this.readChar();
+        break;
+
+      case "*":
+        token = this.createToken(TokenType.ASTERISK, "*");
+        this.readChar();
+        break;
+
+      case "/":
+        token = this.createToken(TokenType.SLASH, "/");
+        this.readChar();
+        break;
+
       default:
         if (this.isDigit(this.ch)) {
           const literal = this.readNumber();
