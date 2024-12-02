@@ -275,11 +275,11 @@ export class Parser {
 
     const args: Expression[] = [];
     if (this.currentToken.type !== TokenType.RPAREN) {
-      args.push(this.parseAdditive()); // Changed from parseExpression to parseAdditive
+      args.push(this.parseExpression());
 
       while (this.currentToken.type === TokenType.COMMA) {
         this.nextToken();
-        args.push(this.parseAdditive());
+        args.push(this.parseExpression());
       }
     }
 

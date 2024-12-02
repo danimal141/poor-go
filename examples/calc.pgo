@@ -1,6 +1,6 @@
 package main
 
 func main() {
-  print(4 + 3 * 2)  // Outputs: 10
-  print(10 - 6 / 2) // Outputs: 7
+  print(4 + 3 * 2)
+  print(10 - 6 / 2)
 }

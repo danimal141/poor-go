@@ -166,7 +166,11 @@ export class LLVMGenerator {
    * Main entry point: generates LLVM IR for the entire program
    */
   public generate(ast: Program): string {
+    // Reset counters at the start of generation
+    this.varCounter = 0;
+    this.stringCounter = 0;
     const statements: string[] = [];
+    this.instructions = [];
 
     const firstDecl = ast.declarations[0];
     if (firstDecl?.type === "FunctionDeclaration") {
@@ -183,6 +187,7 @@ export class LLVMGenerator {
             ) {
               const arg = callExpr.arguments[0];
               if (arg) {
+                // Generate print instructions
                 statements.push(...this.emitPrint(arg));
               }
             }
@@ -191,7 +196,9 @@ export class LLVMGenerator {
       }
     }
 
-    this.emitMainFunction(statements);
+    // First emit all stored instructions from arithmetic operations
+    const allStatements = [...this.instructions, ...statements];
+    this.emitMainFunction(allStatements);
     return this.output.join("\n");
   }
 }
