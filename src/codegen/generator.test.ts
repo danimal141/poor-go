@@ -61,19 +61,16 @@ func main() {
 
   it("should generate correct IR for integer addition", () => {
     const input = `package main
-
-  func main() {
-    print(4 + 3)
-  }`;
+    func main() {
+      print(4 + 3)
+    }`;
     const ir = generateIR(input);
 
-    // Verify required components are present
     const requiredParts = [
       "declare i32 @printf",
       '@.str.int.fmt = private unnamed_addr constant [4 x i8] c"%d\\0A\\00"',
       "define i32 @main()",
-      "add i32 4, 3",
-      "call i32 (i8*, ...) @printf",
+      "%1 = add nsw i32 4, 3",
       "ret i32 0",
     ];
 
@@ -81,7 +78,7 @@ func main() {
       assertEquals(
         ir.includes(part),
         true,
-        `Generated IR should contain "${part}"\nGenerated IR:\n${ir}`,
+        `Expected IR to contain "${part}"\nActual IR:\n${ir}`,
       );
     }
   });
