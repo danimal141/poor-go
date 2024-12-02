@@ -2,6 +2,7 @@ import { Lexer } from "@/lexer/lexer.ts";
 import { Token, TokenType } from "@/lexer/token.ts";
 import {
   BlockStatement,
+  BooleanLiteral,
   CallExpression,
   Expression,
   ExpressionStatement,
@@ -24,8 +25,8 @@ export class Parser {
     this.lexer = lexer;
     this.currentToken = this.lexer.nextToken();
     this.peekToken = this.lexer.nextToken();
-    console.log("Initial current token:", this.currentToken);
-    console.log("Initial peek token:", this.peekToken);
+    // console.log("Initial current token:", this.currentToken);
+    // console.log("Initial peek token:", this.peekToken);
   }
 
   /**
@@ -34,8 +35,8 @@ export class Parser {
   private nextToken(): void {
     this.currentToken = this.peekToken;
     this.peekToken = this.lexer.nextToken();
-    console.log("Advanced - current:", this.currentToken);
-    console.log("Advanced - peek:", this.peekToken);
+    // console.log("Advanced - current:", this.currentToken);
+    // console.log("Advanced - peek:", this.peekToken);
   }
 
   /**
@@ -152,35 +153,7 @@ export class Parser {
   }
 
   /**
-   * Main entry point for parsing a program
-   */
-  public parseProgram(): Program {
-    // Parse package declaration
-    this.expectToken(TokenType.PACKAGE);
-    const packageName = this.expectToken(TokenType.IDENT).literal;
-    this.consumeSemicolons();
-
-    const program: Program = {
-      type: "Program",
-      package: packageName,
-      declarations: [],
-      location: this.currentLocation(),
-    };
-
-    // Parse declarations
-    while (this.currentToken.type !== TokenType.EOF) {
-      if (this.currentToken.type === TokenType.FUNC) {
-        const decl = this.parseFunctionDeclaration();
-        program.declarations.push(decl);
-      }
-      this.consumeSemicolons();
-    }
-
-    return program;
-  }
-
-  /**
-   * Parse a function declaration
+   * Parse function declaration
    */
   private parseFunctionDeclaration(): FunctionDeclaration {
     const location = this.currentLocation();
@@ -246,9 +219,31 @@ export class Parser {
     switch (this.currentToken.type) {
       case TokenType.IDENT:
         return this.parseExpressionStatement();
+      case TokenType.RETURN:
+        return this.parseReturnStatement();
       default:
         this.throwError(`Unexpected token ${this.currentToken.type}`);
     }
+  }
+
+  /**
+   * Parse return statement
+   */
+  private parseReturnStatement(): Statement {
+    const location = this.currentLocation();
+    this.nextToken(); // consume 'return'
+
+    const returnValue = this.parseExpression();
+
+    if (this.currentToken.type === TokenType.SEMICOLON) {
+      this.nextToken(); // consume semicolon
+    }
+
+    return {
+      type: "ReturnStatement",
+      returnValue,
+      location,
+    };
   }
 
   /**
@@ -265,38 +260,27 @@ export class Parser {
   }
 
   /**
-   * Parse an expression
-   */
-  private parseExpression(): Expression {
-    if (this.currentToken.literal === "print") {
-      return this.parseCallExpression();
-    }
-    this.throwError(`Unexpected expression token ${this.currentToken.type}`);
-  }
-
-  /**
    * Parse a function call
    */
   private parseCallExpression(): CallExpression {
+    const location = this.currentLocation();
     const func: Identifier = {
       type: "Identifier",
       value: this.currentToken.literal,
-      location: this.currentLocation(),
+      location,
     };
 
     this.nextToken(); // consume function name
     this.expectToken(TokenType.LPAREN);
 
     const args: Expression[] = [];
+    if (this.currentToken.type !== TokenType.RPAREN) {
+      args.push(this.parseExpression());
 
-    if (this.currentToken.type === TokenType.STRING) {
-      const strLit: StringLiteral = {
-        type: "StringLiteral",
-        value: this.currentToken.literal,
-        location: this.currentLocation(),
-      };
-      args.push(strLit);
-      this.nextToken();
+      while (this.currentToken.type === TokenType.COMMA) {
+        this.nextToken();
+        args.push(this.parseExpression());
+      }
     }
 
     this.expectToken(TokenType.RPAREN);
@@ -305,7 +289,155 @@ export class Parser {
       type: "CallExpression",
       function: func,
       arguments: args,
+      location,
+    };
+  }
+
+  /**
+   * Parse an expression
+   */
+  private parseExpression(): Expression {
+    if (this.currentToken.literal === "print") {
+      return this.parseCallExpression();
+    }
+    return this.parseAdditive();
+  }
+
+  /**
+   * Parse additive expression (e.g. a + b, a - b)
+   */
+  private parseAdditive(): Expression {
+    let left = this.parseMultiplicative();
+
+    while (
+      this.currentToken.type === TokenType.PLUS ||
+      this.currentToken.type === TokenType.MINUS
+    ) {
+      const operator = this.currentToken.literal;
+      this.nextToken(); // consume operator
+      const right = this.parseMultiplicative();
+
+      left = {
+        type: "InfixExpression",
+        operator,
+        left,
+        right,
+        location: this.currentLocation(),
+      };
+    }
+
+    return left;
+  }
+
+  /**
+   * Parse multiplicative expression (e.g. a * b, a / b)
+   */
+  private parseMultiplicative(): Expression {
+    let left = this.parsePrimary();
+
+    while (
+      this.currentToken.type === TokenType.ASTERISK ||
+      this.currentToken.type === TokenType.SLASH
+    ) {
+      const operator = this.currentToken.literal;
+      this.nextToken(); // consume operator
+      const right = this.parsePrimary();
+
+      left = {
+        type: "InfixExpression",
+        operator,
+        left,
+        right,
+        location: this.currentLocation(),
+      };
+    }
+
+    return left;
+  }
+
+  /**
+   * Parse expression with parentheses
+   */
+  private parsePrimary(): Expression {
+    const location = this.currentLocation();
+
+    switch (this.currentToken.type) {
+      case TokenType.LPAREN: {
+        this.nextToken(); // consume '('
+        const expr = this.parseExpression();
+        this.expectToken(TokenType.RPAREN); // consume ')'
+        return expr;
+      }
+      case TokenType.INT: {
+        const value = parseInt(this.currentToken.literal, 10);
+        this.nextToken();
+        return {
+          type: "IntegerLiteral",
+          value,
+          location,
+        };
+      }
+      case TokenType.STRING: {
+        const strLit: StringLiteral = {
+          type: "StringLiteral",
+          value: this.currentToken.literal,
+          location,
+        };
+        this.nextToken();
+        return strLit;
+      }
+      case TokenType.TRUE:
+      case TokenType.FALSE: {
+        const boolLit: BooleanLiteral = {
+          type: "BooleanLiteral",
+          value: this.currentToken.type === TokenType.TRUE,
+          location,
+        };
+        this.nextToken();
+        return boolLit;
+      }
+      case TokenType.IDENT: {
+        if (this.currentToken.literal === "print") {
+          return this.parseCallExpression();
+        }
+        const ident: Identifier = {
+          type: "Identifier",
+          value: this.currentToken.literal,
+          location,
+        };
+        this.nextToken();
+        return ident;
+      }
+      default:
+        this.throwError(`Unexpected token ${this.currentToken.type}`);
+    }
+  }
+
+  /**
+   * Main entry point for parsing a program
+   */
+  public parseProgram(): Program {
+    // Parse package declaration
+    this.expectToken(TokenType.PACKAGE);
+    const packageName = this.expectToken(TokenType.IDENT).literal;
+    this.consumeSemicolons();
+
+    const program: Program = {
+      type: "Program",
+      package: packageName,
+      declarations: [],
       location: this.currentLocation(),
     };
+
+    // Parse declarations
+    while (this.currentToken.type !== TokenType.EOF) {
+      if (this.currentToken.type === TokenType.FUNC) {
+        const decl = this.parseFunctionDeclaration();
+        program.declarations.push(decl);
+      }
+      this.consumeSemicolons();
+    }
+
+    return program;
   }
 }

@@ -1,18 +1,15 @@
 import {
   CallExpression,
+  Expression,
   FunctionDeclaration,
   Program,
-  StringLiteral,
 } from "@/parser/ast.ts";
 
-/**
- * LLVM IR Generator for PoorGo
- * Converts AST to LLVM IR string representation
- */
 export class LLVMGenerator {
   private output: string[] = [];
   private varCounter = 0;
   private stringCounter = 0;
+  private instructions: string[] = []; // Store instructions temporarily
 
   constructor() {
     this.emitModuleHeader();
@@ -20,35 +17,35 @@ export class LLVMGenerator {
 
   /**
    * Emits the LLVM module header including necessary declarations
-   * and global string format constant
    */
   private emitModuleHeader(): void {
     this.output.push("declare i32 @printf(i8* nocapture readonly, ...)\n");
+    // String format for print
     this.output.push(
       `@.str.fmt = private unnamed_addr constant [3 x i8] c"%s\\00", align 1\n`,
+    );
+    // Integer format for print
+    this.output.push(
+      `@.str.int.fmt = private unnamed_addr constant [4 x i8] c"%d\\0A\\00", align 1\n`,
     );
   }
 
   /**
    * Generates the next unique variable name
-   * Returns: A string in the format %n where n is an incrementing number
    */
   private nextVar(): string {
     return `%${++this.varCounter}`;
   }
 
   /**
-   * Generates the next unique string constant identifier
-   * Returns: A string in the format @.str.n where n is an incrementing number
+   * Generates the next unique string constant name
    */
   private nextStringConst(): string {
-    return `@.str.${this.stringCounter++}`;
+    return `@.str.${++this.stringCounter}`;
   }
 
   /**
-   * Processes a string literal to handle escape sequences and returns the LLVM IR representation
-   * @param str The input string to process
-   * Returns: An object containing the processed string and its length
+   * Processes string literal for LLVM IR
    */
   private processStringLiteral(
     str: string,
@@ -58,37 +55,15 @@ export class LLVMGenerator {
 
     for (let i = 0; i < str.length; i++) {
       const char = str[i];
-      if (char === "\\" && i + 1 < str.length) {
-        // Handle escape sequences
-        const nextChar = str[++i];
-        switch (nextChar) {
-          case "n":
-            processed += "\\0A"; // Newline
-            length++;
-            break;
-          case "r":
-            processed += "\\0D"; // Carriage return
-            length++;
-            break;
-          case "t":
-            processed += "\\09"; // Tab
-            length++;
-            break;
-          case '"':
-            processed += '\\"'; // Quote
-            length++;
-            break;
-          case "\\":
-            processed += "\\\\"; // Backslash
-            length++;
-            break;
-          default:
-            processed += "\\" + nextChar;
-            length += 2;
-        }
-      } else {
-        processed += char;
+      if (char === "\\") {
         length++;
+        processed += "\\";
+      } else if (char === "\n") {
+        length++;
+        processed += "\\0A";
+      } else {
+        length++;
+        processed += char;
       }
     }
 
@@ -96,86 +71,134 @@ export class LLVMGenerator {
   }
 
   /**
-   * Emits a string literal as a global constant
-   * @param value The string value to emit
-   * Returns: The identifier for the emitted string constant
+   * Generates LLVM IR for an integer expression
    */
-  private emitStringLiteral(value: string): string {
-    const { processed, length } = this.processStringLiteral(value);
-    const globalId = this.nextStringConst();
+  private emitIntegerExpression(expr: Expression): string {
+    switch (expr.type) {
+      case "IntegerLiteral":
+        return expr.value.toString();
+      case "InfixExpression": {
+        const left = this.emitIntegerExpression(expr.left);
+        const right = this.emitIntegerExpression(expr.right);
+        const result = this.nextVar();
 
-    // Add null terminator to the length
-    this.output.push(
-      `${globalId} = private unnamed_addr constant [${
-        length + 1
-      } x i8] c"${processed}\\00", align 1\n`,
-    );
+        switch (expr.operator) {
+          case "+":
+            this.instructions.push(
+              `  ${result} = add nsw i32 ${left}, ${right}`,
+            );
+            return result;
+          case "-":
+            this.instructions.push(
+              `  ${result} = sub nsw i32 ${left}, ${right}`,
+            );
+            return result;
+          case "*":
+            this.instructions.push(
+              `  ${result} = mul nsw i32 ${left}, ${right}`,
+            );
+            return result;
+          case "/":
+            this.instructions.push(
+              `  ${result} = sdiv i32 ${left}, ${right}`,
+            );
+            return result;
+          default:
+            throw new Error(`Unsupported operator: ${expr.operator}`);
+        }
+      }
+      default:
+        throw new Error(`Unsupported expression type: ${expr.type}`);
+    }
+  }
 
-    return globalId;
+  /**
+   * Generates LLVM IR for a print statement
+   */
+  private emitPrint(expr: Expression): string[] {
+    if (expr.type === "StringLiteral") {
+      const { processed, length } = this.processStringLiteral(expr.value);
+      const strConst = this.nextStringConst();
+
+      // Define string constant
+      this.output.push(
+        `${strConst} = private unnamed_addr constant [${
+          length + 1
+        } x i8] c"${processed}\\00", align 1\n`,
+      );
+
+      const fmtPtr = this.nextVar();
+      const strPtr = this.nextVar();
+      const callResult = this.nextVar();
+
+      return [
+        `  ${fmtPtr} = getelementptr [3 x i8], [3 x i8]* @.str.fmt, i64 0, i64 0`,
+        `  ${strPtr} = getelementptr [${length + 1} x i8], [${
+          length + 1
+        } x i8]* ${strConst}, i64 0, i64 0`,
+        `  ${callResult} = call i32 (i8*, ...) @printf(i8* ${fmtPtr}, i8* ${strPtr})`,
+      ];
+    } else {
+      const intResult = this.emitIntegerExpression(expr);
+      const callResult = this.nextVar();
+
+      return [
+        `  ${callResult} = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.int.fmt, i64 0, i64 0), i32 ${intResult})`,
+      ];
+    }
   }
 
   /**
    * Emits the main function with the given statements
-   * @param statements Array of LLVM IR statements to include in the main function
    */
   private emitMainFunction(statements: string[]): void {
     this.output.push("define i32 @main() {\n");
     this.output.push("entry:\n");
-    statements.forEach((stmt) => this.output.push("  " + stmt));
+    // First emit all stored instructions
+    this.instructions.forEach((inst) => this.output.push(inst));
+    // Then emit the print statement
+    statements.forEach((stmt) => this.output.push(stmt));
     this.output.push("  ret i32 0\n");
     this.output.push("}\n");
   }
 
   /**
-   * Generates LLVM IR for a print statement
-   * @param value The string constant identifier to print
-   * Returns: Array of LLVM IR instructions for the print operation
-   */
-  private emitPrint(value: string): string[] {
-    const fmtPtr = this.nextVar(); // Will be %1
-    const strPtr = this.nextVar(); // Will be %2
-    const callResult = this.nextVar(); // Will be %3
-
-    return [
-      `${fmtPtr} = getelementptr [3 x i8], [3 x i8]* @.str.fmt, i64 0, i64 0`,
-      `${strPtr} = getelementptr [${value.length + 1} x i8], [${
-        value.length + 1
-      } x i8]* ${value}, i64 0, i64 0`,
-      `${callResult} = call i32 (i8*, ...) @printf(i8* ${fmtPtr}, i8* ${strPtr})`,
-    ];
-  }
-
-  /**
    * Main entry point: generates LLVM IR for the entire program
-   * @param ast The AST representing the program
-   * Returns: Complete LLVM IR as a string
    */
   public generate(ast: Program): string {
+    // Reset counters at the start of generation
+    this.varCounter = 0;
+    this.stringCounter = 0;
     const statements: string[] = [];
+    this.instructions = [];
 
     const firstDecl = ast.declarations[0];
     if (firstDecl?.type === "FunctionDeclaration") {
       const funcDecl = firstDecl as FunctionDeclaration;
-      const firstStmt = funcDecl.body.statements[0];
-      if (firstStmt?.type === "ExpressionStatement") {
-        const expr = firstStmt.expression;
-        if (expr.type === "CallExpression") {
-          const callExpr = expr as CallExpression;
-          if (
-            callExpr.function.value === "print" && callExpr.arguments.length > 0
-          ) {
-            const arg = callExpr.arguments[0];
-            if (arg && arg.type === "StringLiteral") {
-              const strLit = arg as StringLiteral;
-              const strVar = this.emitStringLiteral(strLit.value);
-              statements.push(...this.emitPrint(strVar));
+      // Process all statements in the function body
+      for (const stmt of funcDecl.body.statements) {
+        if (stmt.type === "ExpressionStatement") {
+          const expr = stmt.expression;
+          if (expr.type === "CallExpression") {
+            const callExpr = expr as CallExpression;
+            if (
+              callExpr.function.value === "print" &&
+              callExpr.arguments.length > 0
+            ) {
+              const arg = callExpr.arguments[0];
+              if (arg) {
+                // Generate print instructions
+                statements.push(...this.emitPrint(arg));
+              }
             }
           }
         }
       }
     }
 
-    this.emitMainFunction(statements);
+    // First emit all stored instructions from arithmetic operations
+    const allStatements = [...this.instructions, ...statements];
+    this.emitMainFunction(allStatements);
     return this.output.join("\n");
   }
 }
