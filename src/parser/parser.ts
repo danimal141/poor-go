@@ -24,8 +24,8 @@ export class Parser {
     this.lexer = lexer;
     this.currentToken = this.lexer.nextToken();
     this.peekToken = this.lexer.nextToken();
-    console.log("Initial current token:", this.currentToken);
-    console.log("Initial peek token:", this.peekToken);
+    // console.log("Initial current token:", this.currentToken);
+    // console.log("Initial peek token:", this.peekToken);
   }
 
   /**
@@ -34,8 +34,8 @@ export class Parser {
   private nextToken(): void {
     this.currentToken = this.peekToken;
     this.peekToken = this.lexer.nextToken();
-    console.log("Advanced - current:", this.currentToken);
-    console.log("Advanced - peek:", this.peekToken);
+    // console.log("Advanced - current:", this.currentToken);
+    // console.log("Advanced - peek:", this.peekToken);
   }
 
   /**
