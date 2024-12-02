@@ -152,34 +152,6 @@ export class Parser {
   }
 
   /**
-   * Main entry point for parsing a program
-   */
-  public parseProgram(): Program {
-    // Parse package declaration
-    this.expectToken(TokenType.PACKAGE);
-    const packageName = this.expectToken(TokenType.IDENT).literal;
-    this.consumeSemicolons();
-
-    const program: Program = {
-      type: "Program",
-      package: packageName,
-      declarations: [],
-      location: this.currentLocation(),
-    };
-
-    // Parse declarations
-    while (this.currentToken.type !== TokenType.EOF) {
-      if (this.currentToken.type === TokenType.FUNC) {
-        const decl = this.parseFunctionDeclaration();
-        program.declarations.push(decl);
-      }
-      this.consumeSemicolons();
-    }
-
-    return program;
-  }
-
-  /**
    * Parse a function declaration
    */
   private parseFunctionDeclaration(): FunctionDeclaration {
@@ -309,12 +281,41 @@ export class Parser {
   }
 
   /**
-   * Parse additive expression (e.g. a + b)
+   * Parse additive expression (e.g. a + b, a - b)
    */
   private parseAdditive(): Expression {
+    let left = this.parseMultiplicative();
+
+    while (
+      this.currentToken.type === TokenType.PLUS ||
+      this.currentToken.type === TokenType.MINUS
+    ) {
+      const operator = this.currentToken.literal;
+      this.nextToken(); // consume operator
+      const right = this.parseMultiplicative();
+
+      left = {
+        type: "InfixExpression",
+        operator,
+        left,
+        right,
+        location: this.currentLocation(),
+      };
+    }
+
+    return left;
+  }
+
+  /**
+   * Parse multiplicative expression (e.g. a * b, a / b)
+   */
+  private parseMultiplicative(): Expression {
     let left = this.parsePrimary();
 
-    while (this.currentToken.type === TokenType.PLUS) {
+    while (
+      this.currentToken.type === TokenType.ASTERISK ||
+      this.currentToken.type === TokenType.SLASH
+    ) {
       const operator = this.currentToken.literal;
       this.nextToken(); // consume operator
       const right = this.parsePrimary();
@@ -371,5 +372,33 @@ export class Parser {
       default:
         this.throwError(`Unexpected token ${this.currentToken.type}`);
     }
+  }
+
+  /**
+   * Main entry point for parsing a program
+   */
+  public parseProgram(): Program {
+    // Parse package declaration
+    this.expectToken(TokenType.PACKAGE);
+    const packageName = this.expectToken(TokenType.IDENT).literal;
+    this.consumeSemicolons();
+
+    const program: Program = {
+      type: "Program",
+      package: packageName,
+      declarations: [],
+      location: this.currentLocation(),
+    };
+
+    // Parse declarations
+    while (this.currentToken.type !== TokenType.EOF) {
+      if (this.currentToken.type === TokenType.FUNC) {
+        const decl = this.parseFunctionDeclaration();
+        program.declarations.push(decl);
+      }
+      this.consumeSemicolons();
+    }
+
+    return program;
   }
 }
