@@ -59,10 +59,11 @@ func main() {
     });
   });
 
-  it("should generate correct IR for integer addition", () => {
+  it("should generate correct IR for complex arithmetic expressions", () => {
     const input = `package main
     func main() {
-      print(4 + 3)
+      print(4 + 3 * 2)
+      print(10 - 6 / 2)
     }`;
     const ir = generateIR(input);
 
@@ -70,7 +71,14 @@ func main() {
       "declare i32 @printf",
       '@.str.int.fmt = private unnamed_addr constant [4 x i8] c"%d\\0A\\00"',
       "define i32 @main()",
-      "%1 = add nsw i32 4, 3",
+      // First print statement: 4 + (3 * 2)
+      "%1 = mul nsw i32 3, 2",
+      "%2 = add nsw i32 4, %1",
+      "%3 = call i32 (i8*, ...) @printf",
+      // Second print statement: 10 - (6 / 2)
+      "%4 = sdiv i32 6, 2",
+      "%5 = sub nsw i32 10, %4",
+      "%6 = call i32 (i8*, ...) @printf",
       "ret i32 0",
     ];
 

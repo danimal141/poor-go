@@ -2,6 +2,7 @@ import { Lexer } from "@/lexer/lexer.ts";
 import { Token, TokenType } from "@/lexer/token.ts";
 import {
   BlockStatement,
+  BooleanLiteral,
   CallExpression,
   Expression,
   ExpressionStatement,
@@ -152,7 +153,7 @@ export class Parser {
   }
 
   /**
-   * Parse a function declaration
+   * Parse function declaration
    */
   private parseFunctionDeclaration(): FunctionDeclaration {
     const location = this.currentLocation();
@@ -218,9 +219,31 @@ export class Parser {
     switch (this.currentToken.type) {
       case TokenType.IDENT:
         return this.parseExpressionStatement();
+      case TokenType.RETURN:
+        return this.parseReturnStatement();
       default:
         this.throwError(`Unexpected token ${this.currentToken.type}`);
     }
+  }
+
+  /**
+   * Parse return statement
+   */
+  private parseReturnStatement(): Statement {
+    const location = this.currentLocation();
+    this.nextToken(); // consume 'return'
+
+    const returnValue = this.parseExpression();
+
+    if (this.currentToken.type === TokenType.SEMICOLON) {
+      this.nextToken(); // consume semicolon
+    }
+
+    return {
+      type: "ReturnStatement",
+      returnValue,
+      location,
+    };
   }
 
   /**
@@ -333,12 +356,18 @@ export class Parser {
   }
 
   /**
-   * Parse primary expression (number, string, etc)
+   * Parse expression with parentheses
    */
   private parsePrimary(): Expression {
     const location = this.currentLocation();
 
     switch (this.currentToken.type) {
+      case TokenType.LPAREN: {
+        this.nextToken(); // consume '('
+        const expr = this.parseExpression();
+        this.expectToken(TokenType.RPAREN); // consume ')'
+        return expr;
+      }
       case TokenType.INT: {
         const value = parseInt(this.currentToken.literal, 10);
         this.nextToken();
@@ -356,6 +385,16 @@ export class Parser {
         };
         this.nextToken();
         return strLit;
+      }
+      case TokenType.TRUE:
+      case TokenType.FALSE: {
+        const boolLit: BooleanLiteral = {
+          type: "BooleanLiteral",
+          value: this.currentToken.type === TokenType.TRUE,
+          location,
+        };
+        this.nextToken();
+        return boolLit;
       }
       case TokenType.IDENT: {
         if (this.currentToken.literal === "print") {

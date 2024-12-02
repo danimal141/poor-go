@@ -80,21 +80,25 @@ export class SemanticAnalyzer {
   }
 
   /**
-   * Check infix expression types (e.g., a + b)
+   * Check infix expression types (e.g., a + b, a * b)
    */
   private checkInfixExpression(expr: InfixExpression): Type {
     const leftType = this.inferType(expr.left);
     const rightType = this.inferType(expr.right);
 
+    // All arithmetic operators should operate on integers
     switch (expr.operator) {
-      case "+": {
-        // Check numeric types first
+      case "+":
+      case "-":
+      case "*":
+      case "/": {
         if (leftType !== "int" || rightType !== "int") {
           throw new SemanticError(
-            "Cannot perform arithmetic on non-numeric types",
+            `Cannot perform arithmetic operation '${expr.operator}' on types ${leftType} and ${rightType}`,
             expr,
           );
         }
+        // Arithmetic operations between integers result in integer
         return "int";
       }
       default:

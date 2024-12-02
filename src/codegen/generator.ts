@@ -88,6 +88,21 @@ export class LLVMGenerator {
               `  ${result} = add nsw i32 ${left}, ${right}`,
             );
             return result;
+          case "-":
+            this.instructions.push(
+              `  ${result} = sub nsw i32 ${left}, ${right}`,
+            );
+            return result;
+          case "*":
+            this.instructions.push(
+              `  ${result} = mul nsw i32 ${left}, ${right}`,
+            );
+            return result;
+          case "/":
+            this.instructions.push(
+              `  ${result} = sdiv i32 ${left}, ${right}`,
+            );
+            return result;
           default:
             throw new Error(`Unsupported operator: ${expr.operator}`);
         }
@@ -156,17 +171,20 @@ export class LLVMGenerator {
     const firstDecl = ast.declarations[0];
     if (firstDecl?.type === "FunctionDeclaration") {
       const funcDecl = firstDecl as FunctionDeclaration;
-      const firstStmt = funcDecl.body.statements[0];
-      if (firstStmt?.type === "ExpressionStatement") {
-        const expr = firstStmt.expression;
-        if (expr.type === "CallExpression") {
-          const callExpr = expr as CallExpression;
-          if (
-            callExpr.function.value === "print" && callExpr.arguments.length > 0
-          ) {
-            const arg = callExpr.arguments[0];
-            if (arg) {
-              statements.push(...this.emitPrint(arg));
+      // Process all statements in the function body
+      for (const stmt of funcDecl.body.statements) {
+        if (stmt.type === "ExpressionStatement") {
+          const expr = stmt.expression;
+          if (expr.type === "CallExpression") {
+            const callExpr = expr as CallExpression;
+            if (
+              callExpr.function.value === "print" &&
+              callExpr.arguments.length > 0
+            ) {
+              const arg = callExpr.arguments[0];
+              if (arg) {
+                statements.push(...this.emitPrint(arg));
+              }
             }
           }
         }
