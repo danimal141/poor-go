@@ -7,9 +7,8 @@ import {
 
 export class LLVMGenerator {
   private output: string[] = [];
-  private varCounter = 0;
   private stringCounter = 0;
-  private instructions: string[] = []; // Store instructions temporarily
+  private currentVarNumber = 1; // Track the current instruction number
 
   constructor() {
     this.emitModuleHeader();
@@ -31,10 +30,10 @@ export class LLVMGenerator {
   }
 
   /**
-   * Generates the next unique variable name
+   * Generates the next unique variable name with correct numbering
    */
   private nextVar(): string {
-    return `%${++this.varCounter}`;
+    return `%${this.currentVarNumber++}`;
   }
 
   /**
@@ -84,24 +83,16 @@ export class LLVMGenerator {
 
         switch (expr.operator) {
           case "+":
-            this.instructions.push(
-              `  ${result} = add nsw i32 ${left}, ${right}`,
-            );
+            this.output.push(`  ${result} = add nsw i32 ${left}, ${right}`);
             return result;
           case "-":
-            this.instructions.push(
-              `  ${result} = sub nsw i32 ${left}, ${right}`,
-            );
+            this.output.push(`  ${result} = sub nsw i32 ${left}, ${right}`);
             return result;
           case "*":
-            this.instructions.push(
-              `  ${result} = mul nsw i32 ${left}, ${right}`,
-            );
+            this.output.push(`  ${result} = mul nsw i32 ${left}, ${right}`);
             return result;
           case "/":
-            this.instructions.push(
-              `  ${result} = sdiv i32 ${left}, ${right}`,
-            );
+            this.output.push(`  ${result} = sdiv i32 ${left}, ${right}`);
             return result;
           default:
             throw new Error(`Unsupported operator: ${expr.operator}`);
@@ -115,7 +106,7 @@ export class LLVMGenerator {
   /**
    * Generates LLVM IR for a print statement
    */
-  private emitPrint(expr: Expression): string[] {
+  private emitPrint(expr: Expression): void {
     if (expr.type === "StringLiteral") {
       const { processed, length } = this.processStringLiteral(expr.value);
       const strConst = this.nextStringConst();
@@ -131,33 +122,52 @@ export class LLVMGenerator {
       const strPtr = this.nextVar();
       const callResult = this.nextVar();
 
-      return [
+      this.output.push(
         `  ${fmtPtr} = getelementptr [3 x i8], [3 x i8]* @.str.fmt, i64 0, i64 0`,
+      );
+      this.output.push(
         `  ${strPtr} = getelementptr [${length + 1} x i8], [${
           length + 1
         } x i8]* ${strConst}, i64 0, i64 0`,
+      );
+      this.output.push(
         `  ${callResult} = call i32 (i8*, ...) @printf(i8* ${fmtPtr}, i8* ${strPtr})`,
-      ];
+      );
     } else {
       const intResult = this.emitIntegerExpression(expr);
       const callResult = this.nextVar();
-
-      return [
+      this.output.push(
         `  ${callResult} = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.int.fmt, i64 0, i64 0), i32 ${intResult})`,
-      ];
+      );
     }
   }
 
   /**
    * Emits the main function with the given statements
    */
-  private emitMainFunction(statements: string[]): void {
+  private emitMainFunction(mainFunction: FunctionDeclaration): void {
     this.output.push("define i32 @main() {\n");
     this.output.push("entry:\n");
-    // First emit all stored instructions
-    this.instructions.forEach((inst) => this.output.push(inst));
-    // Then emit the print statement
-    statements.forEach((stmt) => this.output.push(stmt));
+
+    // Process all statements in the function body
+    for (const stmt of mainFunction.body.statements) {
+      if (stmt.type === "ExpressionStatement") {
+        const expr = stmt.expression;
+        if (expr.type === "CallExpression") {
+          const callExpr = expr as CallExpression;
+          if (
+            callExpr.function.value === "print" &&
+            callExpr.arguments.length > 0
+          ) {
+            const arg = callExpr.arguments[0];
+            if (arg) {
+              this.emitPrint(arg);
+            }
+          }
+        }
+      }
+    }
+
     this.output.push("  ret i32 0\n");
     this.output.push("}\n");
   }
@@ -167,38 +177,14 @@ export class LLVMGenerator {
    */
   public generate(ast: Program): string {
     // Reset counters at the start of generation
-    this.varCounter = 0;
+    this.currentVarNumber = 1;
     this.stringCounter = 0;
-    const statements: string[] = [];
-    this.instructions = [];
 
-    const firstDecl = ast.declarations[0];
-    if (firstDecl?.type === "FunctionDeclaration") {
-      const funcDecl = firstDecl as FunctionDeclaration;
-      // Process all statements in the function body
-      for (const stmt of funcDecl.body.statements) {
-        if (stmt.type === "ExpressionStatement") {
-          const expr = stmt.expression;
-          if (expr.type === "CallExpression") {
-            const callExpr = expr as CallExpression;
-            if (
-              callExpr.function.value === "print" &&
-              callExpr.arguments.length > 0
-            ) {
-              const arg = callExpr.arguments[0];
-              if (arg) {
-                // Generate print instructions
-                statements.push(...this.emitPrint(arg));
-              }
-            }
-          }
-        }
-      }
+    const mainFunction = ast.declarations[0];
+    if (mainFunction?.type === "FunctionDeclaration") {
+      this.emitMainFunction(mainFunction as FunctionDeclaration);
     }
 
-    // First emit all stored instructions from arithmetic operations
-    const allStatements = [...this.instructions, ...statements];
-    this.emitMainFunction(allStatements);
     return this.output.join("\n");
   }
 }
