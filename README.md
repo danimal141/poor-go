@@ -9,7 +9,7 @@ A subset of Go language compiler implemented in TypeScript/Deno that generates L
 - [x] Basic program structure
 - [x] String literals
 - [x] Print statement (`print("hello")`)
-- [ ] Integer literals
+- [x] Integer literals
 - [ ] Boolean literals
 - [ ] Variables
 - [ ] Basic arithmetic operations
@@ -18,7 +18,7 @@ A subset of Go language compiler implemented in TypeScript/Deno that generates L
 
 ### Types
 - [x] String type (basic support)
-- [ ] Integer type
+- [x] Integer type
 - [ ] Boolean type
 - [ ] Type checking
 - [ ] Type inference
