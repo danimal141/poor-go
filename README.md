@@ -139,7 +139,9 @@ This will create a summary that can be easily shared with others or used for doc
 
 Create a file `hello.pgo`:
 ```go
-package main {
+package main
+
+func main() {
     print("hello")
 }
 ```

@@ -1,10 +1,13 @@
-import { CompileResult } from "./types.ts";
-
 interface CompileOptions {
   outputPath: string;
   emitLLVM: boolean;
   optimizationLevel?: number;
   verbose?: boolean;
+}
+
+interface CompileResult {
+  success: boolean;
+  error?: string;
 }
 
 export class CompilerPipeline {
