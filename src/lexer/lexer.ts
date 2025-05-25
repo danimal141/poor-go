@@ -1,4 +1,5 @@
 import { lookupIdent, Token, TokenType } from "./token.ts";
+import { LexicalError } from "@/common/errors.ts";
 
 /**
  * Lexer class for PoorGo
@@ -23,6 +24,16 @@ export class Lexer {
    */
   public getCurrentChar(): string {
     return this.ch;
+  }
+
+  /**
+   * Returns current location for error reporting
+   */
+  private currentLocation(): { line: number; column: number } {
+    return {
+      line: this.line,
+      column: this.column,
+    };
   }
 
   /**
@@ -93,28 +104,63 @@ export class Lexer {
   }
 
   /**
-   * Reads a string literal from the input
+   * Processes escape sequences in strings
+   */
+  private processEscapeSequence(): string {
+    switch (this.ch) {
+      case "n":
+        return "\n";
+      case "t":
+        return "\t";
+      case "r":
+        return "\r";
+      case "\\":
+        return "\\";
+      case '"':
+        return '"';
+      case "0":
+        return "\0";
+      default:
+        throw new LexicalError(
+          `Invalid escape sequence: \\${this.ch}`,
+          this.currentLocation(),
+        );
+    }
+  }
+
+  /**
+   * Reads a string literal from the input with proper escape sequence handling
    */
   private readString(): string {
-    const position = this.position + 1; // Skip the opening quote
-    this.readChar(); // Move past the opening quote
+    this.readChar(); // Skip opening quote
 
+    let result = "";
     while (this.ch !== '"' && this.ch !== "") {
       if (this.ch === "\\") {
-        this.readChar(); // Skip the backslash
+        this.readChar(); // Skip backslash
+        if (this.ch.length === 0) {
+          throw new LexicalError(
+            "Unterminated escape sequence in string literal",
+            this.currentLocation(),
+          );
+        }
+        result += this.processEscapeSequence();
+        this.readChar();
+      } else {
+        result += this.ch;
+        this.readChar();
       }
-      this.readChar();
     }
 
     if (this.ch !== '"') {
-      throw new Error(
-        `Unterminated string literal at line ${this.line}, column ${this.column}`,
+      throw new LexicalError(
+        "Unterminated string literal",
+        this.currentLocation(),
       );
     }
 
-    const str = this.input.slice(position, this.position);
-    this.readChar(); // Consume the closing quote
-    return str;
+    this.readChar(); // Skip closing quote
+    return result;
   }
 
   /**

@@ -3,7 +3,6 @@ import {
   Expression,
   FunctionDeclaration,
   InfixExpression,
-  Node,
   Program,
   Statement,
 } from "@/parser/ast.ts";
@@ -17,18 +16,7 @@ interface FunctionType {
   returnType: Type;
 }
 
-// Custom error class for semantic analysis errors
-export class SemanticError extends Error {
-  constructor(
-    message: string,
-    public readonly node: Node,
-  ) {
-    super(
-      `Semantic Error at line ${node.location.line}, column ${node.location.column}: ${message}`,
-    );
-    Object.setPrototypeOf(this, SemanticError.prototype);
-  }
-}
+import { SemanticError } from "@/common/errors.ts";
 
 export class SemanticAnalyzer {
   private readonly scopeStack: Map<string, Type>[] = [];
@@ -74,7 +62,7 @@ export class SemanticAnalyzer {
       default:
         throw new SemanticError(
           `Expression type not yet supported: ${expr.type}`,
-          expr,
+          expr.location,
         );
     }
   }
@@ -95,7 +83,7 @@ export class SemanticAnalyzer {
         if (leftType !== "int" || rightType !== "int") {
           throw new SemanticError(
             `Cannot perform arithmetic operation '${expr.operator}' on types ${leftType} and ${rightType}`,
-            expr,
+            expr.location,
           );
         }
         // Arithmetic operations between integers result in integer
@@ -104,7 +92,7 @@ export class SemanticAnalyzer {
       default:
         throw new SemanticError(
           `Operator not yet supported: ${expr.operator}`,
-          expr,
+          expr.location,
         );
     }
   }
@@ -125,14 +113,14 @@ export class SemanticAnalyzer {
     const funcType = this.builtinFunctions[funcName];
 
     if (!funcType) {
-      throw new SemanticError(`Undefined function: ${funcName}`, expr);
+      throw new SemanticError(`Undefined function: ${funcName}`, expr.location);
     }
 
     // Check argument count
     if (expr.arguments.length !== 1) {
       throw new SemanticError(
         `Function ${funcName} expects 1 argument, but got ${expr.arguments.length}`,
-        expr,
+        expr.location,
       );
     }
 
@@ -141,7 +129,7 @@ export class SemanticAnalyzer {
     if (!arg) {
       throw new SemanticError(
         `Function ${funcName} expects 1 argument, but none was provided`,
-        expr,
+        expr.location,
       );
     }
 
@@ -150,7 +138,7 @@ export class SemanticAnalyzer {
     if (!funcType.parameters.includes(argType)) {
       throw new SemanticError(
         `Cannot print value of type ${argType}`,
-        arg,
+        arg.location,
       );
     }
 
@@ -166,13 +154,13 @@ export class SemanticAnalyzer {
       if (func.parameters.length > 0) {
         throw new SemanticError(
           "main function cannot have parameters",
-          func,
+          func.location,
         );
       }
       if (func.returnType !== null) {
         throw new SemanticError(
           "main function cannot have explicit return type",
-          func,
+          func.location,
         );
       }
     }
@@ -198,7 +186,7 @@ export class SemanticAnalyzer {
 
     // Validate package
     if (program.package !== "main") {
-      throw new SemanticError(`Package must be "main"`, program);
+      throw new SemanticError(`Package must be "main"`, { line: 1, column: 1 });
     }
 
     // Analyze declarations
@@ -206,7 +194,7 @@ export class SemanticAnalyzer {
       if (decl.type !== "FunctionDeclaration") {
         throw new SemanticError(
           `Unsupported declaration type: ${decl.type}`,
-          decl,
+          decl.location,
         );
       }
       this.analyzeFunctionDeclaration(decl as FunctionDeclaration);
