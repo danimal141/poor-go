@@ -78,7 +78,7 @@ describe("Lexer - Escape Sequences", () => {
       assertThrows(
         () => lexer.nextToken(),
         LexicalError,
-        "Invalid escape sequence: \\x"
+        "Invalid escape sequence: \\x",
       );
     });
 
@@ -89,7 +89,7 @@ describe("Lexer - Escape Sequences", () => {
       assertThrows(
         () => lexer.nextToken(),
         LexicalError,
-        "Unterminated escape sequence in string literal"
+        "Unterminated escape sequence in string literal",
       );
     });
 
@@ -100,7 +100,7 @@ describe("Lexer - Escape Sequences", () => {
       assertThrows(
         () => lexer.nextToken(),
         LexicalError,
-        "Unterminated string literal"
+        "Unterminated string literal",
       );
     });
 
@@ -119,7 +119,10 @@ describe("Lexer - Escape Sequences", () => {
       } catch (error) {
         if (error instanceof LexicalError) {
           assertEquals(error.location.line, 2);
-          assertEquals(error.message.includes("Invalid escape sequence: \\z"), true);
+          assertEquals(
+            error.message.includes("Invalid escape sequence: \\z"),
+            true,
+          );
         } else {
           throw error;
         }
@@ -193,8 +196,16 @@ func main() {
 
       assertEquals(tokens.length, expectedTokens.length);
       tokens.forEach((token, i) => {
-        assertEquals(token.type, expectedTokens[i]?.type, `Token ${i} type mismatch`);
-        assertEquals(token.literal, expectedTokens[i]?.literal, `Token ${i} literal mismatch`);
+        assertEquals(
+          token.type,
+          expectedTokens[i]?.type,
+          `Token ${i} type mismatch`,
+        );
+        assertEquals(
+          token.literal,
+          expectedTokens[i]?.literal,
+          `Token ${i} literal mismatch`,
+        );
       });
     });
   });

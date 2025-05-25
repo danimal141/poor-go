@@ -1,12 +1,12 @@
 import { describe, it } from "std/testing/bdd.ts";
-import { assertEquals, assertInstanceOf, assert } from "std/assert/mod.ts";
+import { assert, assertEquals, assertInstanceOf } from "std/assert/mod.ts";
 import {
-  CompilerError,
-  LexicalError,
-  SyntaxError,
-  SemanticError,
   CodegenError,
+  CompilerError,
   ErrorCollector,
+  LexicalError,
+  SemanticError,
+  SyntaxError,
 } from "./errors.ts";
 
 describe("CompilerError", () => {
@@ -15,7 +15,10 @@ describe("CompilerError", () => {
   it("should create LexicalError with correct message format", () => {
     const error = new LexicalError("Invalid character", location);
 
-    assertEquals(error.message, "lexical error at line 10, column 5: Invalid character");
+    assertEquals(
+      error.message,
+      "lexical error at line 10, column 5: Invalid character",
+    );
     assertEquals(error.location, location);
     assertEquals(error.phase, "lexical");
     assertInstanceOf(error, LexicalError);
@@ -25,7 +28,10 @@ describe("CompilerError", () => {
   it("should create SyntaxError with correct message format", () => {
     const error = new SyntaxError("Expected semicolon", location);
 
-    assertEquals(error.message, "syntax error at line 10, column 5: Expected semicolon");
+    assertEquals(
+      error.message,
+      "syntax error at line 10, column 5: Expected semicolon",
+    );
     assertEquals(error.location, location);
     assertEquals(error.phase, "syntax");
     assertInstanceOf(error, SyntaxError);
@@ -35,7 +41,10 @@ describe("CompilerError", () => {
   it("should create SemanticError with correct message format", () => {
     const error = new SemanticError("Undefined variable", location);
 
-    assertEquals(error.message, "semantic error at line 10, column 5: Undefined variable");
+    assertEquals(
+      error.message,
+      "semantic error at line 10, column 5: Undefined variable",
+    );
     assertEquals(error.location, location);
     assertEquals(error.phase, "semantic");
     assertInstanceOf(error, SemanticError);
@@ -45,7 +54,10 @@ describe("CompilerError", () => {
   it("should create CodegenError with correct message format", () => {
     const error = new CodegenError("Invalid instruction", location);
 
-    assertEquals(error.message, "codegen error at line 10, column 5: Invalid instruction");
+    assertEquals(
+      error.message,
+      "codegen error at line 10, column 5: Invalid instruction",
+    );
     assertEquals(error.location, location);
     assertEquals(error.phase, "codegen");
     assertInstanceOf(error, CodegenError);

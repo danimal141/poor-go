@@ -108,16 +108,22 @@ export class Lexer {
    */
   private processEscapeSequence(): string {
     switch (this.ch) {
-      case "n": return "\n";
-      case "t": return "\t";
-      case "r": return "\r";
-      case "\\": return "\\";
-      case '"': return '"';
-      case "0": return "\0";
+      case "n":
+        return "\n";
+      case "t":
+        return "\t";
+      case "r":
+        return "\r";
+      case "\\":
+        return "\\";
+      case '"':
+        return '"';
+      case "0":
+        return "\0";
       default:
         throw new LexicalError(
           `Invalid escape sequence: \\${this.ch}`,
-          this.currentLocation()
+          this.currentLocation(),
         );
     }
   }
@@ -135,7 +141,7 @@ export class Lexer {
         if (this.ch.length === 0) {
           throw new LexicalError(
             "Unterminated escape sequence in string literal",
-            this.currentLocation()
+            this.currentLocation(),
           );
         }
         result += this.processEscapeSequence();
@@ -149,7 +155,7 @@ export class Lexer {
     if (this.ch !== '"') {
       throw new LexicalError(
         "Unterminated string literal",
-        this.currentLocation()
+        this.currentLocation(),
       );
     }
 

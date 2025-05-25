@@ -7,9 +7,11 @@ export abstract class CompilerError extends Error {
   constructor(
     message: string,
     public readonly location: Location,
-    public readonly phase: 'lexical' | 'syntax' | 'semantic' | 'codegen'
+    public readonly phase: "lexical" | "syntax" | "semantic" | "codegen",
   ) {
-    super(`${phase} error at line ${location.line}, column ${location.column}: ${message}`);
+    super(
+      `${phase} error at line ${location.line}, column ${location.column}: ${message}`,
+    );
     this.name = this.constructor.name;
     Object.setPrototypeOf(this, CompilerError.prototype);
   }
@@ -20,7 +22,7 @@ export abstract class CompilerError extends Error {
  */
 export class LexicalError extends CompilerError {
   constructor(message: string, location: Location) {
-    super(message, location, 'lexical');
+    super(message, location, "lexical");
     Object.setPrototypeOf(this, LexicalError.prototype);
   }
 }
@@ -30,7 +32,7 @@ export class LexicalError extends CompilerError {
  */
 export class SyntaxError extends CompilerError {
   constructor(message: string, location: Location) {
-    super(message, location, 'syntax');
+    super(message, location, "syntax");
     Object.setPrototypeOf(this, SyntaxError.prototype);
   }
 }
@@ -40,7 +42,7 @@ export class SyntaxError extends CompilerError {
  */
 export class SemanticError extends CompilerError {
   constructor(message: string, location: Location) {
-    super(message, location, 'semantic');
+    super(message, location, "semantic");
     Object.setPrototypeOf(this, SemanticError.prototype);
   }
 }
@@ -50,7 +52,7 @@ export class SemanticError extends CompilerError {
  */
 export class CodegenError extends CompilerError {
   constructor(message: string, location: Location) {
-    super(message, location, 'codegen');
+    super(message, location, "codegen");
     Object.setPrototypeOf(this, CodegenError.prototype);
   }
 }
@@ -96,6 +98,6 @@ export class ErrorCollector {
 
     return this.errors
       .map((error, index) => `${index + 1}. ${error.message}`)
-      .join('\n');
+      .join("\n");
   }
 }
