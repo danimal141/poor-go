@@ -1,6 +1,0 @@
-.vscode
-deno.lock
-**/*/*.ja.md
-
-node_modules
-dist
