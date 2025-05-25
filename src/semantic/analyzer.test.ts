@@ -2,7 +2,7 @@ import { describe, it } from "std/testing/bdd.ts";
 import { assertThrows } from "std/assert/mod.ts";
 import { Parser } from "@/parser/parser.ts";
 import { Lexer } from "@/lexer/lexer.ts";
-import { SemanticError } from "@/semantic/analyzer.ts";
+import { SemanticError } from "@/common/errors.ts";
 import { SemanticAnalyzer } from "@/semantic/analyzer.ts";
 
 describe("SemanticAnalyzer", () => {
